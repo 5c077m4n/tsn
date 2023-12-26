@@ -57,11 +57,28 @@ impl Lexer {
         }
     }
 
+    fn peek_char(&mut self) -> u8 {
+        if self.read_position < self.input.len() {
+            self.input[self.read_position]
+        } else {
+            b'\0'
+        }
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespce();
 
         let c = self.c.unwrap_or(b'\0');
-        let token = Token::try_from(c);
+        let peek = self.peek_char();
+
+        let token = if peek == b'=' || peek == b'!' {
+            self.read_char();
+
+            let literal = &self.input[(self.position - 1)..self.read_position];
+            Ok(Token::from(literal))
+        } else {
+            Token::try_from(c)
+        };
 
         match token {
             Ok(t) => {

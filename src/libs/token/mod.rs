@@ -35,6 +35,10 @@ pub enum Token {
     OpenCurlyBraces,
     /// `}`
     CloseCurlyBraces,
+    /// `==`
+    EqEq,
+    /// `!=`
+    NEq,
 
     // Keywords
     Function,
@@ -58,6 +62,8 @@ impl From<&'static [u8]> for Token {
             b"return" => Token::Return,
             b"true" => Token::True,
             b"false" => Token::False,
+            b"==" => Token::EqEq,
+            b"!=" => Token::NEq,
             other => Token::Identifier(other),
         }
     }

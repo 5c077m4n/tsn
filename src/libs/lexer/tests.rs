@@ -160,3 +160,27 @@ fn if_else_stmt_token_read() {
         assert_eq!(next_token, *expected_token, "expected token #{}", index + 1);
     }
 }
+
+#[test]
+fn eq_neq_token_read() {
+    let input = r#"
+    10 == 10;
+    10 != 9;
+    "#;
+    let expected = &[
+        Token::Integer(b"10"),
+        Token::EqEq,
+        Token::Integer(b"10"),
+        Token::Semicolon,
+        Token::Integer(b"10"),
+        Token::NEq,
+        Token::Integer(b"9"),
+        Token::Semicolon,
+    ];
+    let mut lexer = Lexer::new(input);
+
+    for (index, expected_token) in expected.iter().enumerate() {
+        let next_token = lexer.next_token();
+        assert_eq!(next_token, *expected_token, "expected token #{}", index + 1);
+    }
+}
