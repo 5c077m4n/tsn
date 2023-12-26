@@ -11,6 +11,18 @@ pub enum Token {
     Eq,
     /// `+`
     Plus,
+    /// `-`
+    Minus,
+    /// `!`
+    Bang,
+    /// `*`
+    Asterisk,
+    /// `/`
+    Slash,
+    /// Less than `<`
+    LT,
+    /// Greater than `>`
+    GT,
     /// `,`
     Comma,
     /// `;`
@@ -23,9 +35,16 @@ pub enum Token {
     OpenCurlyBraces,
     /// `}`
     CloseCurlyBraces,
+
+    // Keywords
     Function,
     Let,
     Const,
+    If,
+    Else,
+    Return,
+    True,
+    False,
 }
 
 impl From<&'static [u8]> for Token {
@@ -34,6 +53,11 @@ impl From<&'static [u8]> for Token {
             b"function" => Token::Function,
             b"let" => Token::Let,
             b"const" => Token::Const,
+            b"if" => Token::If,
+            b"else" => Token::Else,
+            b"return" => Token::Return,
+            b"true" => Token::True,
+            b"false" => Token::False,
             other => Token::Identifier(other),
         }
     }
@@ -46,6 +70,12 @@ impl TryFrom<u8> for Token {
             b'=' => Ok(Token::Eq),
             b',' => Ok(Token::Comma),
             b'+' => Ok(Token::Plus),
+            b'-' => Ok(Token::Minus),
+            b'!' => Ok(Token::Bang),
+            b'*' => Ok(Token::Asterisk),
+            b'/' => Ok(Token::Slash),
+            b'<' => Ok(Token::LT),
+            b'>' => Ok(Token::GT),
             b'(' => Ok(Token::OpenParens),
             b')' => Ok(Token::CloseParens),
             b'{' => Ok(Token::OpenCurlyBraces),

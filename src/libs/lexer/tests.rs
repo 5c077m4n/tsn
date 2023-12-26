@@ -41,6 +41,35 @@ fn let_stmt_token_read() {
 }
 
 #[test]
+fn math_signs_token_read() {
+    let input = r#"
+    !-/*5;
+    5 < 10 > 5;
+    "#;
+    let expected = &[
+        Token::Bang,
+        Token::Minus,
+        Token::Slash,
+        Token::Asterisk,
+        Token::Integer(b"5"),
+        Token::Semicolon,
+        Token::Integer(b"5"),
+        Token::LT,
+        Token::Integer(b"10"),
+        Token::GT,
+        Token::Integer(b"5"),
+        Token::Semicolon,
+        Token::EOF,
+    ];
+    let mut lexer = Lexer::new(input);
+
+    for (index, expected_token) in expected.iter().enumerate() {
+        let next_token = lexer.next_token();
+        assert_eq!(next_token, *expected_token, "expected token #{}", index);
+    }
+}
+
+#[test]
 fn functional_token_read() {
     let input = r#"let five = 5;
     let ten = 10;
@@ -89,6 +118,40 @@ fn functional_token_read() {
         Token::CloseParens,
         Token::Semicolon,
         Token::EOF,
+    ];
+    let mut lexer = Lexer::new(input);
+
+    for (index, expected_token) in expected.iter().enumerate() {
+        let next_token = lexer.next_token();
+        assert_eq!(next_token, *expected_token, "expected token #{}", index + 1);
+    }
+}
+
+#[test]
+fn if_else_stmt_token_read() {
+    let input = r#"if (5 < 10) {
+        return true;
+    } else {
+        return false;
+    }"#;
+    let expected = &[
+        Token::If,
+        Token::OpenParens,
+        Token::Integer(b"5"),
+        Token::LT,
+        Token::Integer(b"10"),
+        Token::CloseParens,
+        Token::OpenCurlyBraces,
+        Token::Return,
+        Token::True,
+        Token::Semicolon,
+        Token::CloseCurlyBraces,
+        Token::Else,
+        Token::OpenCurlyBraces,
+        Token::Return,
+        Token::False,
+        Token::Semicolon,
+        Token::CloseCurlyBraces,
     ];
     let mut lexer = Lexer::new(input);
 
