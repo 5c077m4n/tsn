@@ -3,7 +3,7 @@ use super::{super::token::Token, Lexer};
 #[test]
 fn simple_token_read() {
 	let input = "=+(){},;";
-	let expected = &[
+	let expected = vec![
 		Token::Eq,
 		Token::Plus,
 		Token::OpenParens,
@@ -13,31 +13,26 @@ fn simple_token_read() {
 		Token::Comma,
 		Token::Semicolon,
 	];
-	let mut lexer = Lexer::new(input);
+	let lexer = Lexer::new(input);
+	let results: Vec<Token> = lexer.into_iter().collect();
 
-	for (index, expected_token) in expected.iter().enumerate() {
-		let next_token = lexer.next_token();
-		assert_eq!(next_token, *expected_token, "expected token #{}", index);
-	}
+	assert_eq!(expected, results);
 }
 
 #[test]
 fn let_stmt_token_read() {
 	let input = "let param = 10;";
-	let expected = &[
+	let expected = vec![
 		Token::Let,
 		Token::Identifier(b"param"),
 		Token::Eq,
 		Token::Integer(b"10"),
 		Token::Semicolon,
-		Token::EOF,
 	];
-	let mut lexer = Lexer::new(input);
+	let lexer = Lexer::new(input);
+	let results: Vec<Token> = lexer.into_iter().collect();
 
-	for (index, expected_token) in expected.iter().enumerate() {
-		let next_token = lexer.next_token();
-		assert_eq!(next_token, *expected_token, "expected token #{}", index + 1);
-	}
+	assert_eq!(expected, results);
 }
 
 #[test]
@@ -46,7 +41,7 @@ fn math_signs_token_read() {
     !-/*5;
     5 < 10 > 5;
     "#;
-	let expected = &[
+	let expected = vec![
 		Token::Bang,
 		Token::Minus,
 		Token::Slash,
@@ -59,14 +54,11 @@ fn math_signs_token_read() {
 		Token::GT,
 		Token::Integer(b"5"),
 		Token::Semicolon,
-		Token::EOF,
 	];
-	let mut lexer = Lexer::new(input);
+	let lexer = Lexer::new(input);
+	let results: Vec<Token> = lexer.into_iter().collect();
 
-	for (index, expected_token) in expected.iter().enumerate() {
-		let next_token = lexer.next_token();
-		assert_eq!(next_token, *expected_token, "expected token #{}", index);
-	}
+	assert_eq!(expected, results);
 }
 
 #[test]
@@ -80,7 +72,7 @@ fn functional_token_read() {
 
     let result = add(five, ten);
     "#;
-	let expected = &[
+	let expected = vec![
 		Token::Let,
 		Token::Identifier(b"five"),
 		Token::Eq,
@@ -117,14 +109,11 @@ fn functional_token_read() {
 		Token::Identifier(b"ten"),
 		Token::CloseParens,
 		Token::Semicolon,
-		Token::EOF,
 	];
-	let mut lexer = Lexer::new(input);
+	let lexer = Lexer::new(input);
+	let results: Vec<Token> = lexer.into_iter().collect();
 
-	for (index, expected_token) in expected.iter().enumerate() {
-		let next_token = lexer.next_token();
-		assert_eq!(next_token, *expected_token, "expected token #{}", index + 1);
-	}
+	assert_eq!(expected, results);
 }
 
 #[test]
@@ -134,7 +123,7 @@ fn if_else_stmt_token_read() {
     } else {
         return false;
     }"#;
-	let expected = &[
+	let expected = vec![
 		Token::If,
 		Token::OpenParens,
 		Token::Integer(b"5"),
@@ -153,12 +142,10 @@ fn if_else_stmt_token_read() {
 		Token::Semicolon,
 		Token::CloseCurlyBraces,
 	];
-	let mut lexer = Lexer::new(input);
+	let lexer = Lexer::new(input);
+	let results: Vec<Token> = lexer.into_iter().collect();
 
-	for (index, expected_token) in expected.iter().enumerate() {
-		let next_token = lexer.next_token();
-		assert_eq!(next_token, *expected_token, "expected token #{}", index + 1);
-	}
+	assert_eq!(expected, results);
 }
 
 #[test]
@@ -167,7 +154,7 @@ fn eq_neq_token_read() {
     10 == 10;
     10 != 9;
     "#;
-	let expected = &[
+	let expected = vec![
 		Token::Integer(b"10"),
 		Token::EqEq,
 		Token::Integer(b"10"),
@@ -177,10 +164,8 @@ fn eq_neq_token_read() {
 		Token::Integer(b"9"),
 		Token::Semicolon,
 	];
-	let mut lexer = Lexer::new(input);
+	let lexer = Lexer::new(input);
+	let results: Vec<Token> = lexer.into_iter().collect();
 
-	for (index, expected_token) in expected.iter().enumerate() {
-		let next_token = lexer.next_token();
-		assert_eq!(next_token, *expected_token, "expected token #{}", index + 1);
-	}
+	assert_eq!(expected, results);
 }
