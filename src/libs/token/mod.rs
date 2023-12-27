@@ -1,3 +1,5 @@
+use std::fmt;
+
 use anyhow::{bail, Error, Result};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -89,6 +91,47 @@ impl TryFrom<u8> for Token {
 			b';' => Ok(Token::Semicolon),
 			b'\0' => Ok(Token::EOF),
 			_ => bail!("Not found"),
+		}
+	}
+}
+
+impl fmt::Display for Token {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		match self {
+			Self::Illegal(c) => write!(f, "{}", *c as char),
+			Self::EOF => write!(f, "EOF"),
+			Self::Identifier(ident) => {
+				let ident = String::from_utf8(ident.to_owned()).unwrap();
+				write!(f, "{}", ident)
+			}
+			Self::Integer(n) => {
+				let n = String::from_utf8(n.to_owned()).unwrap();
+				write!(f, "{}", n)
+			}
+			Self::Eq => write!(f, "="),
+			Self::Plus => write!(f, "+"),
+			Self::Minus => write!(f, "-"),
+			Self::Bang => write!(f, "!"),
+			Self::Asterisk => write!(f, "*"),
+			Self::Slash => write!(f, "/"),
+			Self::LT => write!(f, "<"),
+			Self::GT => write!(f, ">"),
+			Self::Comma => write!(f, ","),
+			Self::Semicolon => write!(f, ";"),
+			Self::OpenParens => write!(f, "("),
+			Self::CloseParens => write!(f, ")"),
+			Self::OpenCurlyBraces => write!(f, "{{"),
+			Self::CloseCurlyBraces => write!(f, "}}"),
+			Self::EqEq => write!(f, "=="),
+			Self::NEq => write!(f, "!="),
+			Self::Function => write!(f, "function"),
+			Self::Let => write!(f, "let"),
+			Self::Const => write!(f, "const"),
+			Self::If => write!(f, "if"),
+			Self::Else => write!(f, "else"),
+			Self::Return => write!(f, "return"),
+			Self::True => write!(f, "true"),
+			Self::False => write!(f, "false"),
 		}
 	}
 }
