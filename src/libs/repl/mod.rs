@@ -14,7 +14,7 @@ pub fn start() -> Result<()> {
 
 		let lexer = Lexer::new(input.into_boxed_str());
 		for token in lexer.into_iter() {
-			log::info!("{:?}", token);
+			println!("{:?}", token);
 		}
 	}
 }
