@@ -1,8 +1,11 @@
 use std::fmt;
 
 use anyhow::{bail, Error, Result};
+use strum_macros::{EnumDiscriminants, EnumIter};
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumDiscriminants)]
+#[strum_discriminants(derive(EnumIter))]
+#[strum_discriminants(name(TokenType))]
 pub enum Token {
 	Illegal(u8),
 	/// End of file
