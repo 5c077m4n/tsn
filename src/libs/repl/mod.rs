@@ -12,7 +12,7 @@ pub fn start() -> Result<()> {
 		let mut input = String::new();
 		stdin().read_line(&mut input)?;
 
-		let lexer = Lexer::new(input.as_bytes());
+		let lexer = Lexer::new(input.into_boxed_str());
 		for token in lexer.into_iter() {
 			log::info!("{:?}", token);
 		}

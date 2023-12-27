@@ -11,16 +11,16 @@ fn is_whitespace(c: u8) -> bool {
 }
 
 pub struct Lexer {
-	input: &'static [u8],
+	input: Vec<u8>,
 	position: usize,
 	read_position: usize,
 	c: Option<u8>,
 }
 
 impl Lexer {
-	pub fn new(input: &'static str) -> Self {
+	pub fn new(input: Box<str>) -> Self {
 		let mut s = Self {
-			input: input.as_bytes(),
+			input: input.as_bytes().to_vec(),
 			position: 0,
 			read_position: 0,
 			c: None,
@@ -35,20 +35,20 @@ impl Lexer {
 		self.read_position += 1;
 	}
 
-	fn read_identifier(&mut self) -> &'static [u8] {
+	fn read_identifier(&mut self) -> Vec<u8> {
 		let position = self.position;
 		while self.c.map_or(false, is_letter) {
 			self.read_char();
 		}
-		&self.input[position..self.position]
+		self.input[position..self.position].to_vec()
 	}
 
-	fn read_number(&mut self) -> &'static [u8] {
+	fn read_number(&mut self) -> Vec<u8> {
 		let position = self.position;
 		while self.c.map_or(false, is_digit) {
 			self.read_char();
 		}
-		&self.input[position..self.position]
+		self.input[position..self.position].to_vec()
 	}
 
 	fn skip_whitespce(&mut self) {
@@ -74,7 +74,7 @@ impl Lexer {
 		let token = if peek == b'=' || peek == b'!' {
 			self.read_char();
 
-			let literal = &self.input[(self.position - 1)..self.read_position];
+			let literal = self.input[(self.position - 1)..self.read_position].to_vec();
 			Ok(Token::from(literal))
 		} else {
 			Token::try_from(c)

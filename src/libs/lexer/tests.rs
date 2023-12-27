@@ -13,7 +13,7 @@ fn simple_token_read() {
 		Token::Comma,
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input);
+	let lexer = Lexer::new(input.into());
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -24,12 +24,12 @@ fn let_stmt_token_read() {
 	let input = "let param = 10;";
 	let expected = vec![
 		Token::Let,
-		Token::Identifier(b"param"),
+		Token::Identifier(b"param".into()),
 		Token::Eq,
-		Token::Integer(b"10"),
+		Token::Integer(b"10".into()),
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input);
+	let lexer = Lexer::new(input.into());
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -46,16 +46,16 @@ fn math_signs_token_read() {
 		Token::Minus,
 		Token::Slash,
 		Token::Asterisk,
-		Token::Integer(b"5"),
+		Token::Integer(b"5".into()),
 		Token::Semicolon,
-		Token::Integer(b"5"),
+		Token::Integer(b"5".into()),
 		Token::LT,
-		Token::Integer(b"10"),
+		Token::Integer(b"10".into()),
 		Token::GT,
-		Token::Integer(b"5"),
+		Token::Integer(b"5".into()),
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input);
+	let lexer = Lexer::new(input.into());
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -74,43 +74,43 @@ fn functional_token_read() {
     "#;
 	let expected = vec![
 		Token::Let,
-		Token::Identifier(b"five"),
+		Token::Identifier(b"five".into()),
 		Token::Eq,
-		Token::Integer(b"5"),
+		Token::Integer(b"5".into()),
 		Token::Semicolon,
 		Token::Let,
-		Token::Identifier(b"ten"),
+		Token::Identifier(b"ten".into()),
 		Token::Eq,
-		Token::Integer(b"10"),
+		Token::Integer(b"10".into()),
 		Token::Semicolon,
 		Token::Let,
-		Token::Identifier(b"add"),
+		Token::Identifier(b"add".into()),
 		Token::Eq,
 		Token::Function,
 		Token::OpenParens,
-		Token::Identifier(b"x"),
+		Token::Identifier(b"x".into()),
 		Token::Comma,
-		Token::Identifier(b"y"),
+		Token::Identifier(b"y".into()),
 		Token::CloseParens,
 		Token::OpenCurlyBraces,
-		Token::Identifier(b"x"),
+		Token::Identifier(b"x".into()),
 		Token::Plus,
-		Token::Identifier(b"y"),
+		Token::Identifier(b"y".into()),
 		Token::Semicolon,
 		Token::CloseCurlyBraces,
 		Token::Semicolon,
 		Token::Let,
-		Token::Identifier(b"result"),
+		Token::Identifier(b"result".into()),
 		Token::Eq,
-		Token::Identifier(b"add"),
+		Token::Identifier(b"add".into()),
 		Token::OpenParens,
-		Token::Identifier(b"five"),
+		Token::Identifier(b"five".into()),
 		Token::Comma,
-		Token::Identifier(b"ten"),
+		Token::Identifier(b"ten".into()),
 		Token::CloseParens,
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input);
+	let lexer = Lexer::new(input.into());
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -126,9 +126,9 @@ fn if_else_stmt_token_read() {
 	let expected = vec![
 		Token::If,
 		Token::OpenParens,
-		Token::Integer(b"5"),
+		Token::Integer(b"5".into()),
 		Token::LT,
-		Token::Integer(b"10"),
+		Token::Integer(b"10".into()),
 		Token::CloseParens,
 		Token::OpenCurlyBraces,
 		Token::Return,
@@ -142,7 +142,7 @@ fn if_else_stmt_token_read() {
 		Token::Semicolon,
 		Token::CloseCurlyBraces,
 	];
-	let lexer = Lexer::new(input);
+	let lexer = Lexer::new(input.into());
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -155,16 +155,16 @@ fn eq_neq_token_read() {
     10 != 9;
     "#;
 	let expected = vec![
-		Token::Integer(b"10"),
+		Token::Integer(b"10".into()),
 		Token::EqEq,
-		Token::Integer(b"10"),
+		Token::Integer(b"10".into()),
 		Token::Semicolon,
-		Token::Integer(b"10"),
+		Token::Integer(b"10".into()),
 		Token::NEq,
-		Token::Integer(b"9"),
+		Token::Integer(b"9".into()),
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input);
+	let lexer = Lexer::new(input.into());
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);

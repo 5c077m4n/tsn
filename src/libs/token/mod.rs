@@ -5,8 +5,8 @@ pub enum Token {
 	Illegal(u8),
 	/// End of file
 	EOF,
-	Identifier(&'static [u8]),
-	Integer(&'static [u8]),
+	Identifier(Vec<u8>),
+	Integer(Vec<u8>),
 	/// `=`
 	Eq,
 	/// `+`
@@ -51,9 +51,9 @@ pub enum Token {
 	False,
 }
 
-impl From<&'static [u8]> for Token {
-	fn from(value: &'static [u8]) -> Self {
-		match value {
+impl From<Vec<u8>> for Token {
+	fn from(value: Vec<u8>) -> Self {
+		match value.as_slice() {
 			b"function" => Token::Function,
 			b"let" => Token::Let,
 			b"const" => Token::Const,
@@ -64,7 +64,7 @@ impl From<&'static [u8]> for Token {
 			b"false" => Token::False,
 			b"==" => Token::EqEq,
 			b"!=" => Token::NEq,
-			other => Token::Identifier(other),
+			other => Token::Identifier(other.to_vec()),
 		}
 	}
 }
