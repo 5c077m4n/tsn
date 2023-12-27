@@ -4,7 +4,7 @@ use super::{Lexer, Parser};
 use crate::libs::ast::{LetStmt, Statement};
 
 #[test]
-fn test_let_parsing() -> Result<()> {
+fn let_parsing() -> Result<()> {
 	let input = r#"
     let x = 5;
     let y = 10;
@@ -28,6 +28,7 @@ fn test_let_parsing() -> Result<()> {
 				assert_eq!(name.as_ref().unwrap().value, expected);
 				assert_eq!(name.as_ref().unwrap().token.to_string(), expected);
 			}
+			#[allow(unreachable_patterns)]
 			other => assert!(
 				false,
 				"This should have been a let statement, but got {:?}",
@@ -35,6 +36,38 @@ fn test_let_parsing() -> Result<()> {
 			),
 		};
 	}
+
+	Ok(())
+}
+
+#[test]
+fn let_parsing_errors() -> Result<()> {
+	let input = r#"
+    let x 5;
+    let = 10;
+    let 838383;
+    "#;
+
+	let lexer = Lexer::new(input.into());
+	let mut parser = Parser::new(Box::new(lexer));
+	let _program = parser.parse_program()?;
+
+	assert_eq!(parser.errors().len(), 3);
+	assert_eq!(
+		parser.errors().get(0),
+		Some(
+			&"Expected the next token to be `Eq`, but got `Some(Integer([53]))` instead"
+				.to_string()
+		)
+	);
+	assert_eq!(
+		parser.errors().get(1),
+		Some(&"Expected the next token to be `Identifier`, but got `Some(Eq)` instead".to_string())
+	);
+	assert_eq!(
+		parser.errors().get(2),
+		Some(&"Expected the next token to be `Identifier`, but got `Some(Integer([56, 51, 56, 51, 56, 51]))` instead".to_string())
+	);
 
 	Ok(())
 }

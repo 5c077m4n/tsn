@@ -10,6 +10,7 @@ pub struct Parser {
 	lexer: Box<Lexer>,
 	token_current: Option<Token>,
 	token_peek: Option<Token>,
+	errors: Vec<String>,
 }
 impl Parser {
 	fn next_token(&mut self) {
@@ -22,10 +23,15 @@ impl Parser {
 			lexer,
 			token_current: None,
 			token_peek: None,
+			errors: vec![],
 		};
 		p.next_token();
 		p.next_token();
 		p
+	}
+
+	pub fn errors(&self) -> &[String] {
+		&self.errors[..]
 	}
 
 	fn current_token_is(&self, t: TokenType) -> bool {
@@ -42,8 +48,16 @@ impl Parser {
 		let is_expeted_token = self.peek_token_is(t);
 		if is_expeted_token {
 			self.next_token();
+		} else {
+			self.peek_error(t);
 		}
 		is_expeted_token
+	}
+	fn peek_error(&mut self, t: TokenType) {
+		self.errors.push(format!(
+			"Expected the next token to be `{:?}`, but got `{:?}` instead",
+			t, self.token_peek
+		));
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
@@ -84,9 +98,10 @@ impl Parser {
 	}
 
 	fn parse_statement(&mut self) -> Result<Box<Statement>> {
-		match self.token_current {
+		match &self.token_current {
 			Some(Token::Let) => self.parse_let_statement(),
-			_ => todo!(),
+			None => bail!("The current token should not be empty here"),
+			other => bail!("`{:?}` isn't implemented yet", other),
 		}
 	}
 
