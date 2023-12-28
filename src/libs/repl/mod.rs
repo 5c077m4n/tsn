@@ -2,7 +2,7 @@ use std::io::{stdin, stdout, Write};
 
 use anyhow::Result;
 
-use super::lexer::Lexer;
+use super::{lexer::Lexer, parser::Parser};
 
 pub fn start() -> Result<()> {
 	loop {
@@ -13,8 +13,13 @@ pub fn start() -> Result<()> {
 		stdin().read_line(&mut input)?;
 
 		let lexer = Lexer::new(input.into_boxed_str());
-		for token in lexer.into_iter() {
-			println!("{:?}", token);
+		let mut parser = Parser::new(Box::new(lexer));
+		let _program = parser.parse_program()?;
+
+		if !parser.errors().is_empty() {
+			for error in parser.errors() {
+				eprintln!("{}", error);
+			}
 		}
 	}
 }
