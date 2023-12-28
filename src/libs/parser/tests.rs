@@ -1,7 +1,14 @@
 use anyhow::Result;
 
-use super::{Lexer, Parser};
-use crate::libs::ast::{LetStmt, Statement};
+use super::{
+	super::{
+		ast::{Expression, LetStmt, ReturnStmt, Statement},
+		token::Token,
+	},
+	Lexer,
+	Parser,
+};
+use crate::libs::ast::IdentifierExpr;
 
 #[test]
 fn let_parsing() -> Result<()> {
@@ -15,6 +22,7 @@ fn let_parsing() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
+	assert!(parser.errors().is_empty());
 	assert_eq!(program.statements.len(), 3);
 
 	let expected_identifiers = &["x", "y", "foobar"];
@@ -68,6 +76,43 @@ fn let_parsing_errors() -> Result<()> {
 		parser.errors().get(2),
 		Some(&"Expected the next token to be `Identifier`, but got `Some(Integer([56, 51, 56, 51, 56, 51]))` instead".to_string())
 	);
+
+	Ok(())
+}
+
+#[test]
+fn return_parsing() -> Result<()> {
+	let input = r#"
+    return 5;
+    return 10;
+    return 993322;
+    "#;
+
+	let lexer = Lexer::new(input.into());
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(parser.errors().is_empty());
+	assert_eq!(program.statements.len(), 3);
+
+	let expected_stmts = &[
+		Statement::Return(ReturnStmt {
+			token: Token::Return,
+			return_value: None,
+		}),
+		Statement::Return(ReturnStmt {
+			token: Token::Return,
+			return_value: None,
+		}),
+		Statement::Return(ReturnStmt {
+			token: Token::Return,
+			return_value: None,
+		}),
+	];
+	for (index, stmt) in program.statements.iter().enumerate() {
+		let expected = expected_stmts.get(index).unwrap();
+		assert_eq!(stmt.as_ref(), expected);
+	}
 
 	Ok(())
 }
