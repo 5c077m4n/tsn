@@ -2,13 +2,12 @@ use anyhow::Result;
 
 use super::{
 	super::{
-		ast::{Expression, LetStmt, ReturnStmt, Statement},
+		ast::{LetStmt, ReturnStmt, Statement},
 		token::Token,
 	},
 	Lexer,
 	Parser,
 };
-use crate::libs::ast::IdentifierExpr;
 
 #[test]
 fn let_parsing() -> Result<()> {
