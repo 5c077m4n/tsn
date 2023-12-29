@@ -1,16 +1,36 @@
 use anyhow::{bail, Result};
 
 use super::{
-	ast::{IdentifierExpr, LetStmt, Program, ReturnStmt, Statement},
+	ast::{Expression, ExpressionStmt, IdentifierExpr, LetStmt, Program, ReturnStmt, Statement},
 	lexer::Lexer,
 	token::{Token, TokenType},
 };
 
+type PrefixParseFn = Box<dyn FnOnce() -> Result<Box<Expression>>>;
+type InfixParseFn = Box<dyn FnOnce(Expression) -> Result<Box<Expression>>>;
+
+enum Precedence {
+	LOWEST = 0isize,
+	/// `==`
+	EQUALS,
+	/// `>` or `<`
+	LESSGREATER,
+	/// `+`
+	SUM,
+	/// `*`
+	PRODUCT,
+	/// `-X` or `!X`
+	PREFIX,
+	/// `fnCall(X)`
+	CALL,
+}
+
 pub struct Parser {
 	lexer: Box<Lexer>,
+	errors: Vec<String>,
+	// token holders
 	token_current: Option<Token>,
 	token_peek: Option<Token>,
-	errors: Vec<String>,
 }
 impl Parser {
 	fn next_token(&mut self) {
@@ -21,13 +41,43 @@ impl Parser {
 	pub fn new(lexer: Box<Lexer>) -> Self {
 		let mut p = Self {
 			lexer,
+			errors: vec![],
+
 			token_current: None,
 			token_peek: None,
-			errors: vec![],
 		};
+
 		p.next_token();
 		p.next_token();
 		p
+	}
+
+	fn prefix_parse_fns(&self, _precedence: Precedence) -> Result<PrefixParseFn> {
+		let Some(ref token) = self.token_current else {
+			bail!("The current token is empty");
+		};
+
+		match TokenType::from(token) {
+			TokenType::Identifier => {
+				let Some(ref token) = self.token_current else {
+					bail!("The current token is empty");
+				};
+				let token = token.clone();
+
+				let parse_fn = move || {
+					let ident = IdentifierExpr {
+						token: token.clone(),
+						value: token.to_string(),
+					};
+					let ident = Expression::Identifier(ident);
+					let ident = Box::new(ident);
+
+					Ok(ident)
+				};
+				Ok(Box::new(parse_fn))
+			}
+			other => bail!("No parsing fn exists for the `{:?}` token type", other),
+		}
 	}
 
 	pub fn errors(&self) -> &[String] {
@@ -61,7 +111,11 @@ impl Parser {
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
-		let token = self.token_current.as_ref().unwrap().clone();
+		let Some(ref token) = self.token_current else {
+			bail!("The current token is empty");
+		};
+		let token = token.clone();
+
 		let mut let_stmt = LetStmt {
 			token,
 			name: None,
@@ -98,7 +152,11 @@ impl Parser {
 	}
 
 	fn parse_return_statement(&mut self) -> Result<Box<Statement>> {
-		let token = self.token_current.as_ref().unwrap().clone();
+		let Some(ref token) = self.token_current else {
+			bail!("The current token is empty");
+		};
+		let token = token.clone();
+
 		let ret_stmt = ReturnStmt {
 			token,
 			return_value: None,
@@ -116,12 +174,41 @@ impl Parser {
 		Ok(ret_stmt)
 	}
 
+	fn parse_expression(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
+		let prefix_fn = self.prefix_parse_fns(Precedence::LOWEST)?;
+		prefix_fn()
+	}
+
+	fn parse_expression_statement(&mut self) -> Result<Box<Statement>> {
+		let Some(ref token) = self.token_current else {
+			bail!("The current token is empty");
+		};
+		let token = token.clone();
+
+		let mut expr_stmt = ExpressionStmt {
+			token,
+			expression: None,
+		};
+
+		let expr = self.parse_expression(Precedence::LOWEST)?;
+		expr_stmt.expression = Some(expr);
+
+		// TODO: remove this token skipping
+		while !self.current_token_is(TokenType::Semicolon) {
+			self.next_token();
+		}
+
+		let expr_stmt = Statement::Expression(expr_stmt);
+		let expr_stmt = Box::new(expr_stmt);
+		Ok(expr_stmt)
+	}
+
 	fn parse_statement(&mut self) -> Result<Box<Statement>> {
 		match &self.token_current {
 			Some(Token::Let) => self.parse_let_statement(),
 			Some(Token::Return) => self.parse_return_statement(),
 			None => bail!("The current token should not be empty here"),
-			other => bail!("`{:?}` isn't implemented yet", other),
+			_ => self.parse_expression_statement(),
 		}
 	}
 

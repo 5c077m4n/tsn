@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use super::{
 	super::{
@@ -8,6 +8,7 @@ use super::{
 	Lexer,
 	Parser,
 };
+use crate::libs::ast::{Expression, ExpressionStmt, IdentifierExpr};
 
 #[test]
 fn let_parsing() -> Result<()> {
@@ -112,6 +113,34 @@ fn return_parsing() -> Result<()> {
 		let expected = expected_stmts.get(index).unwrap();
 		assert_eq!(stmt.as_ref(), expected);
 	}
+
+	Ok(())
+}
+
+#[test]
+fn ident_expr() -> Result<()> {
+	let input = "foobar;";
+
+	let lexer = Lexer::new(input.into());
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert_eq!(program.statements.len(), 1);
+
+	let expr = program.statements.get(0).unwrap().as_ref();
+	let expr = match expr {
+		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+		other => bail!("Should not have type {:?}", other),
+	};
+
+	let expr_stmt = expr.as_ref().unwrap().as_ref();
+	let ident = match expr_stmt {
+		Expression::Identifier(ident_expr) => ident_expr,
+		other => bail!("Should not have type {:?}", other),
+	};
+
+	assert_eq!(ident.value, "foobar");
+	assert_eq!(ident.token.to_string(), "foobar");
 
 	Ok(())
 }

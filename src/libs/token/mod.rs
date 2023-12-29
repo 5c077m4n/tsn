@@ -104,11 +104,11 @@ impl fmt::Display for Token {
 			Self::Illegal(c) => write!(f, "{}", *c as char),
 			Self::EOF => write!(f, "EOF"),
 			Self::Identifier(ident) => {
-				let ident = String::from_utf8(ident.to_owned()).unwrap();
+				let ident = String::from_utf8(ident.to_owned()).map_err(|_| fmt::Error)?;
 				write!(f, "{}", ident)
 			}
 			Self::Integer(n) => {
-				let n = String::from_utf8(n.to_owned()).unwrap();
+				let n = String::from_utf8(n.to_owned()).map_err(|_| fmt::Error)?;
 				write!(f, "{}", n)
 			}
 			Self::Eq => write!(f, "="),

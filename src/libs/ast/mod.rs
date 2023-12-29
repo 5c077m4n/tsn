@@ -45,8 +45,8 @@ pub struct ReturnStmt {
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExpressionStmt {
-	token: Token,
-	expression: Expression,
+	pub token: Token,
+	pub expression: Option<Box<Expression>>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
@@ -87,11 +87,12 @@ impl fmt::Display for Statement {
 				}
 				write!(f, ";")
 			}
-			Statement::Expression(ExpressionStmt {
-				token: _,
-				expression,
-			}) => {
-				write!(f, "{}", expression.to_string())
+			Statement::Expression(ExpressionStmt { expression, .. }) => {
+				if let Some(expr) = expression {
+					write!(f, "{}", expr.to_string())
+				} else {
+					Err(fmt::Error)
+				}
 			}
 		}
 	}
