@@ -1,7 +1,16 @@
 use anyhow::{bail, Result};
 
 use super::{
-	ast::{Expression, ExpressionStmt, IdentifierExpr, LetStmt, Program, ReturnStmt, Statement},
+	ast::{
+		Expression,
+		ExpressionStmt,
+		IdentifierExpr,
+		IntegerExpr,
+		LetStmt,
+		Program,
+		ReturnStmt,
+		Statement,
+	},
 	lexer::Lexer,
 	token::{Token, TokenType},
 };
@@ -59,22 +68,30 @@ impl Parser {
 
 		match TokenType::from(token) {
 			TokenType::Identifier => {
-				let Some(ref token) = self.token_current else {
-					bail!("The current token is empty");
-				};
 				let token = token.clone();
 
-				let parse_fn = move || {
-					let ident = IdentifierExpr {
-						token: token.clone(),
-						value: token.to_string(),
-					};
-					let ident = Expression::Identifier(ident);
-					let ident = Box::new(ident);
+				let parse_fn: PrefixParseFn = Box::new(move || {
+					let value = token.to_string();
+					let ident = IdentifierExpr { token, value };
 
-					Ok(ident)
-				};
-				Ok(Box::new(parse_fn))
+					let ident_expr = Expression::Identifier(ident);
+					let ident_expr = Box::new(ident_expr);
+					Ok(ident_expr)
+				});
+				Ok(parse_fn)
+			}
+			TokenType::Integer => {
+				let token = token.clone();
+
+				let parse_fn: PrefixParseFn = Box::new(move || {
+					let value = token.to_string().parse::<usize>()?;
+					let int_literal = IntegerExpr { token, value };
+
+					let int_expr = Expression::Integer(int_literal);
+					let int_expr = Box::new(int_expr);
+					Ok(int_expr)
+				});
+				Ok(parse_fn)
 			}
 			other => bail!("No parsing fn exists for the `{:?}` token type", other),
 		}
