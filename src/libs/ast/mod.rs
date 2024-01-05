@@ -8,25 +8,33 @@ trait Node: fmt::Display {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct IdentifierExpr {
-	/// Tokne::Identifier
+	/// Token::Identifier
 	pub token: Token,
 	pub value: String,
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct IntegerExpr {
+	pub token: Token,
+	pub value: usize,
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
+	Integer(IntegerExpr),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
 		match self {
 			Self::Identifier(IdentifierExpr { token, .. }) => token.to_string(),
+			Self::Integer(IntegerExpr { token, .. }) => token.to_string(),
 		}
 	}
 }
 impl fmt::Display for Expression {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
-			Self::Identifier(IdentifierExpr { value, .. }) => write!(f, "{}", value.to_string()),
+			Self::Identifier(IdentifierExpr { value, .. }) => write!(f, "{}", value),
+			Self::Integer(IntegerExpr { value, .. }) => write!(f, "{}", value),
 		}
 	}
 }

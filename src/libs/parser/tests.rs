@@ -144,3 +144,31 @@ fn ident_expr() -> Result<()> {
 
 	Ok(())
 }
+
+#[test]
+fn int_lit_expr() -> Result<()> {
+	let input = "5;";
+
+	let lexer = Lexer::new(input.into());
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert_eq!(program.statements.len(), 1);
+
+	let expr = program.statements.get(0).unwrap().as_ref();
+	let expr = match expr {
+		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+		other => bail!("Should not have type {:?}", other),
+	};
+
+	let expr_stmt = expr.as_ref().unwrap().as_ref();
+	let ident = match expr_stmt {
+		Expression::Integer(int_expr) => int_expr,
+		other => bail!("Should not have type {:?}", other),
+	};
+
+	assert_eq!(ident.value, 5);
+	assert_eq!(ident.token.to_string(), "5");
+
+	Ok(())
+}
