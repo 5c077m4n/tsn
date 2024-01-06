@@ -7,6 +7,7 @@ use super::{
 		IdentifierExpr,
 		IntegerExpr,
 		LetStmt,
+		PrefixExpr,
 		Program,
 		ReturnStmt,
 		Statement,
@@ -14,9 +15,6 @@ use super::{
 	lexer::Lexer,
 	token::{Token, TokenType},
 };
-
-type PrefixParseFn = Box<dyn FnOnce() -> Result<Box<Expression>>>;
-type InfixParseFn = Box<dyn FnOnce(Expression) -> Result<Box<Expression>>>;
 
 enum Precedence {
 	LOWEST = 0isize,
@@ -61,7 +59,7 @@ impl Parser {
 		p
 	}
 
-	fn prefix_parse_fns(&self, _precedence: Precedence) -> Result<PrefixParseFn> {
+	fn prefix_parse(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
 		let Some(ref token) = self.token_current else {
 			bail!("The current token is empty");
 		};
@@ -70,28 +68,38 @@ impl Parser {
 			TokenType::Identifier => {
 				let token = token.clone();
 
-				let parse_fn: PrefixParseFn = Box::new(move || {
-					let value = token.to_string();
-					let ident = IdentifierExpr { token, value };
+				let value = token.to_string();
+				let ident = IdentifierExpr { token, value };
 
-					let ident_expr = Expression::Identifier(ident);
-					let ident_expr = Box::new(ident_expr);
-					Ok(ident_expr)
-				});
-				Ok(parse_fn)
+				let ident_expr = Expression::Identifier(ident);
+				let ident_expr = Box::new(ident_expr);
+				Ok(ident_expr)
 			}
 			TokenType::Integer => {
 				let token = token.clone();
 
-				let parse_fn: PrefixParseFn = Box::new(move || {
-					let value = token.to_string().parse::<usize>()?;
-					let int_literal = IntegerExpr { token, value };
+				let value = token.to_string().parse::<usize>()?;
+				let int_literal = IntegerExpr { token, value };
 
-					let int_expr = Expression::Integer(int_literal);
-					let int_expr = Box::new(int_expr);
-					Ok(int_expr)
-				});
-				Ok(parse_fn)
+				let int_expr = Expression::Integer(int_literal);
+				let int_expr = Box::new(int_expr);
+				Ok(int_expr)
+			}
+			TokenType::Bang | TokenType::Minus => {
+				let mut prefix_expr = PrefixExpr {
+					token: token.clone(),
+					op: token.clone().to_string(),
+					right: None,
+				};
+
+				self.next_token();
+
+				let right = self.parse_expression(Precedence::PREFIX)?;
+				prefix_expr.right = Some(right);
+
+				let prefix_expr = Expression::Prefix(prefix_expr);
+				let prefix_expr = Box::new(prefix_expr);
+				Ok(prefix_expr)
 			}
 			other => bail!("No parsing fn exists for the `{:?}` token type", other),
 		}
@@ -192,8 +200,7 @@ impl Parser {
 	}
 
 	fn parse_expression(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
-		let prefix_fn = self.prefix_parse_fns(Precedence::LOWEST)?;
-		prefix_fn()
+		self.prefix_parse(Precedence::LOWEST)
 	}
 
 	fn parse_expression_statement(&mut self) -> Result<Box<Statement>> {

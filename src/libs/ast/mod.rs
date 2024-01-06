@@ -18,15 +18,24 @@ pub struct IntegerExpr {
 	pub value: usize,
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct PrefixExpr {
+	/// `Token::Bang` or `Token::Minus`
+	pub token: Token,
+	pub op: String,
+	pub right: Option<Box<Expression>>,
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
+	Prefix(PrefixExpr),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
 		match self {
 			Self::Identifier(IdentifierExpr { token, .. }) => token.to_string(),
 			Self::Integer(IntegerExpr { token, .. }) => token.to_string(),
+			Self::Prefix(PrefixExpr { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -35,6 +44,14 @@ impl fmt::Display for Expression {
 		match self {
 			Self::Identifier(IdentifierExpr { value, .. }) => write!(f, "{}", value),
 			Self::Integer(IntegerExpr { value, .. }) => write!(f, "{}", value),
+			Self::Prefix(PrefixExpr { op, right, .. }) => {
+				write!(
+					f,
+					"({}{})",
+					op,
+					right.as_ref().map_or("".into(), |r| r.to_string())
+				)
+			}
 		}
 	}
 }
@@ -44,12 +61,12 @@ pub struct LetStmt {
 	/// Token::Let
 	pub token: Token,
 	pub name: Option<IdentifierExpr>,
-	pub value: Option<Expression>,
+	pub value: Option<Box<Expression>>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct ReturnStmt {
 	pub token: Token,
-	pub return_value: Option<Expression>,
+	pub return_value: Option<Box<Expression>>,
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExpressionStmt {

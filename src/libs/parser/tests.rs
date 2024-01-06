@@ -171,3 +171,79 @@ fn int_lit_expr() -> Result<()> {
 
 	Ok(())
 }
+
+#[test]
+fn not_prefix_expr() -> Result<()> {
+	let input = "!5;";
+
+	let lexer = Lexer::new(input.into());
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert_eq!(program.statements.len(), 1);
+
+	let expr = program.statements.get(0).unwrap().as_ref();
+	let expr = match expr {
+		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+		other => bail!("Should not have type {:?}", other),
+	};
+
+	let expr_stmt = expr.as_ref().unwrap().as_ref();
+	let prefix = match expr_stmt {
+		expr @ Expression::Prefix(_) => expr,
+		other => bail!("Should not have type {:?}", other),
+	};
+	let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
+		bail!("Could not extract the content of the expression")
+	};
+
+	assert_eq!(prefix_expr.op, "!");
+	assert_eq!(
+		prefix_expr
+			.right
+			.as_ref()
+			.map_or("".into(), |r| r.to_string()),
+		"5"
+	);
+	assert_eq!(prefix.to_string(), "(!5)");
+
+	Ok(())
+}
+
+#[test]
+fn minus_prefix_expr() -> Result<()> {
+	let input = "-5;";
+
+	let lexer = Lexer::new(input.into());
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert_eq!(program.statements.len(), 1);
+
+	let expr = program.statements.get(0).unwrap().as_ref();
+	let expr = match expr {
+		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+		other => bail!("Should not have type {:?}", other),
+	};
+
+	let expr_stmt = expr.as_ref().unwrap().as_ref();
+	let prefix = match expr_stmt {
+		expr @ Expression::Prefix(_) => expr,
+		other => bail!("Should not have type {:?}", other),
+	};
+	let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
+		bail!("Could not extract the content of the expression")
+	};
+
+	assert_eq!(prefix_expr.op, "-");
+	assert_eq!(
+		prefix_expr
+			.right
+			.as_ref()
+			.map_or("".into(), |r| r.to_string()),
+		"5"
+	);
+	assert_eq!(prefix.to_string(), "(-5)");
+
+	Ok(())
+}
