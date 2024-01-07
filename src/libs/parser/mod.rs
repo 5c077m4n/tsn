@@ -5,6 +5,7 @@ use super::{
 		Expression,
 		ExpressionStmt,
 		IdentifierExpr,
+		InfixExpr,
 		IntegerExpr,
 		LetStmt,
 		PrefixExpr,
@@ -16,6 +17,18 @@ use super::{
 	token::{Token, TokenType},
 };
 
+static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
+	TokenType::Plus,
+	TokenType::Minus,
+	TokenType::Slash,
+	TokenType::Asterisk,
+	TokenType::EqEq,
+	TokenType::NEq,
+	TokenType::LT,
+	TokenType::GT,
+];
+
+#[derive(PartialEq, PartialOrd)]
 enum Precedence {
 	LOWEST = 0isize,
 	/// `==`
@@ -30,6 +43,17 @@ enum Precedence {
 	PREFIX,
 	/// `fnCall(X)`
 	CALL,
+}
+impl From<TokenType> for Precedence {
+	fn from(value: TokenType) -> Self {
+		match value {
+			TokenType::EqEq | TokenType::NEq => Self::EQUALS,
+			TokenType::LT | TokenType::GT => Self::LESSGREATER,
+			TokenType::Plus | TokenType::Minus => Self::SUM,
+			TokenType::Asterisk | TokenType::Slash => Self::PRODUCT,
+			_ => Self::LOWEST,
+		}
+	}
 }
 
 pub struct Parser {
@@ -59,6 +83,41 @@ impl Parser {
 		p
 	}
 
+	fn current_precedence(&self) -> Result<Precedence> {
+		let Some(ref token) = self.token_current else {
+			bail!("The current token is empty");
+		};
+		Ok(Precedence::from(TokenType::from(token)))
+	}
+	fn peek_precedence(&self) -> Result<Precedence> {
+		let Some(ref token) = self.token_peek else {
+			bail!("The peek token is empty");
+		};
+
+		let t_type = TokenType::from(token);
+		Ok(Precedence::from(t_type))
+	}
+
+	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
+		let Some(token) = self.token_current.as_ref() else {
+			bail!("The current token is empty");
+		};
+
+		let mut expr = InfixExpr {
+			token: token.clone(),
+			left,
+			op: token.to_string(),
+			right: None,
+		};
+
+		let precedence = self.current_precedence()?;
+		self.next_token();
+		expr.right = Some(self.parse_expression(precedence)?);
+
+		let expr = Expression::Infix(expr);
+		let expr = Box::new(expr);
+		Ok(expr)
+	}
 	fn prefix_parse(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
 		let Some(ref token) = self.token_current else {
 			bail!("The current token is empty");
@@ -129,10 +188,11 @@ impl Parser {
 		is_expeted_token
 	}
 	fn peek_error(&mut self, t: TokenType) {
-		self.errors.push(format!(
+		let msg = format!(
 			"Expected the next token to be `{:?}`, but got `{:?}` instead",
 			t, self.token_peek
-		));
+		);
+		self.errors.push(msg);
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
@@ -199,8 +259,19 @@ impl Parser {
 		Ok(ret_stmt)
 	}
 
-	fn parse_expression(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
-		self.prefix_parse(Precedence::LOWEST)
+	fn parse_expression(&mut self, precedence: Precedence) -> Result<Box<Expression>> {
+		let mut left_expr = self.prefix_parse(Precedence::LOWEST)?;
+
+		while !self.peek_token_is(TokenType::Semicolon)
+			&& self.peek_precedence()? > precedence
+			&& self.token_current.as_ref().is_some_and(|t| {
+				let t_type = TokenType::from(t);
+				!PREFIX_TOKEN_TYPES.contains(&t_type)
+			}) {
+			self.next_token();
+			left_expr = self.infix_parse(left_expr)?;
+		}
+		Ok(left_expr)
 	}
 
 	fn parse_expression_statement(&mut self) -> Result<Box<Statement>> {

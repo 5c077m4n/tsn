@@ -193,8 +193,10 @@ fn not_prefix_expr() -> Result<()> {
 		expr @ Expression::Prefix(_) => expr,
 		other => bail!("Should not have type {:?}", other),
 	};
+	assert_eq!(prefix.to_string(), "(!5)");
+
 	let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
-		bail!("Could not extract the content of the expression")
+		unreachable!("Could not extract the content of the expression")
 	};
 
 	assert_eq!(prefix_expr.op, "!");
@@ -205,7 +207,6 @@ fn not_prefix_expr() -> Result<()> {
 			.map_or("".into(), |r| r.to_string()),
 		"5"
 	);
-	assert_eq!(prefix.to_string(), "(!5)");
 
 	Ok(())
 }
@@ -231,8 +232,10 @@ fn minus_prefix_expr() -> Result<()> {
 		expr @ Expression::Prefix(_) => expr,
 		other => bail!("Should not have type {:?}", other),
 	};
+	assert_eq!(prefix.to_string(), "(-5)");
+
 	let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
-		bail!("Could not extract the content of the expression")
+		unreachable!("Could not extract the content of the expression")
 	};
 
 	assert_eq!(prefix_expr.op, "-");
@@ -243,7 +246,74 @@ fn minus_prefix_expr() -> Result<()> {
 			.map_or("".into(), |r| r.to_string()),
 		"5"
 	);
-	assert_eq!(prefix.to_string(), "(-5)");
+
+	Ok(())
+}
+
+#[test]
+fn infix_expr() -> Result<()> {
+	let tests = &[
+		("5 + 5;", 5, "+", 5),
+		("5 - 5;", 5, "-", 5),
+		("5 * 5;", 5, "*", 5),
+		("5 / 5;", 5, "/", 5),
+		("5 < 5;", 5, "<", 5),
+		("5 > 5;", 5, ">", 5),
+		("5 == 5;", 5, "==", 5),
+		("5 != 5;", 5, "!=", 5),
+	];
+
+	for test in tests {
+		let lexer = Lexer::new(test.0.into());
+		let mut parser = Parser::new(Box::new(lexer));
+		let program = parser.parse_program()?;
+
+		assert_eq!(
+			program.statements.len(),
+			1,
+			"Wrong number of statements for test `{}`",
+			test.0
+		);
+
+		let expr_stmt = program.statements.get(0).unwrap().as_ref();
+		let expr_stmt = match expr_stmt {
+			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+			other => bail!("Should not have type {:?}", other),
+		};
+
+		let expr_stmt = expr_stmt.as_ref().unwrap().as_ref();
+		let prefix = match expr_stmt {
+			expr @ Expression::Infix(_) => expr,
+			other => bail!(
+				"Should be of type `Expression::Infix`, not `{:?}` (in `{}`)",
+				other,
+				test.0
+			),
+		};
+		assert_eq!(
+			prefix.to_string(),
+			format!("({} {} {})", test.1, test.2, test.3)
+		);
+
+		let Expression::Infix(ref infix_expr) = expr_stmt else {
+			unreachable!("Could not extract the content of the expression")
+		};
+
+		assert_eq!(
+			infix_expr.left.to_string(),
+			test.1.to_string(),
+			"Wrong left expression"
+		);
+		assert_eq!(infix_expr.op, test.2, "Wrong operator");
+		assert_eq!(
+			infix_expr
+				.right
+				.as_ref()
+				.map_or("".into(), |r| r.to_string()),
+			test.3.to_string(),
+			"Wrong right expression"
+		);
+	}
 
 	Ok(())
 }

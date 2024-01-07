@@ -25,10 +25,19 @@ pub struct PrefixExpr {
 	pub right: Option<Box<Expression>>,
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct InfixExpr {
+	/// `Token::Bang` or `Token::Minus`
+	pub token: Token,
+	pub left: Box<Expression>,
+	pub op: String,
+	pub right: Option<Box<Expression>>,
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
 	Prefix(PrefixExpr),
+	Infix(InfixExpr),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
@@ -36,6 +45,7 @@ impl Node for Expression {
 			Self::Identifier(IdentifierExpr { token, .. }) => token.to_string(),
 			Self::Integer(IntegerExpr { token, .. }) => token.to_string(),
 			Self::Prefix(PrefixExpr { token, .. }) => token.to_string(),
+			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -48,6 +58,17 @@ impl fmt::Display for Expression {
 				write!(
 					f,
 					"({}{})",
+					op,
+					right.as_ref().map_or("".into(), |r| r.to_string())
+				)
+			}
+			Self::Infix(InfixExpr {
+				left, op, right, ..
+			}) => {
+				write!(
+					f,
+					"({} {} {})",
+					left.to_string(),
 					op,
 					right.as_ref().map_or("".into(), |r| r.to_string())
 				)
