@@ -13,13 +13,15 @@ pub fn start() -> Result<()> {
 		stdin().read_line(&mut input)?;
 
 		let lexer = Lexer::new(input.into_boxed_str());
-		let mut parser = Parser::new(Box::new(lexer));
-		let _program = parser.parse_program()?;
+		let lexer = Box::new(lexer);
+		let mut parser = Parser::new(lexer);
+		let program = parser.parse_program()?;
 
 		if !parser.errors().is_empty() {
 			for error in parser.errors() {
 				eprintln!("{}", error);
 			}
 		}
+		println!("{}", program);
 	}
 }
