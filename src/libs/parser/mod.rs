@@ -103,7 +103,7 @@ impl Parser {
 			bail!("The current token is empty");
 		};
 
-		let mut expr = InfixExpr {
+		let mut infix_expr = InfixExpr {
 			token: token.clone(),
 			left,
 			op: token.to_string(),
@@ -112,11 +112,9 @@ impl Parser {
 
 		let precedence = self.current_precedence()?;
 		self.next_token();
-		expr.right = Some(self.parse_expression(precedence)?);
+		infix_expr.right = Some(self.parse_expression(precedence)?);
 
-		let expr = Expression::Infix(expr);
-		let expr = Box::new(expr);
-		Ok(expr)
+		infix_expr.into()
 	}
 	fn prefix_parse(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
 		let Some(ref token) = self.token_current else {
@@ -128,11 +126,9 @@ impl Parser {
 				let token = token.clone();
 
 				let value = token.to_string();
-				let ident = IdentifierExpr { token, value };
+				let ident_expr = IdentifierExpr { token, value };
 
-				let ident_expr = Expression::Identifier(ident);
-				let ident_expr = Box::new(ident_expr);
-				Ok(ident_expr)
+				ident_expr.into()
 			}
 			TokenType::Integer => {
 				let token = token.clone();
@@ -140,9 +136,7 @@ impl Parser {
 				let value = token.to_string().parse::<usize>()?;
 				let int_literal = IntegerExpr { token, value };
 
-				let int_expr = Expression::Integer(int_literal);
-				let int_expr = Box::new(int_expr);
-				Ok(int_expr)
+				int_literal.into()
 			}
 			TokenType::Bang | TokenType::Minus => {
 				let mut prefix_expr = PrefixExpr {
@@ -156,9 +150,7 @@ impl Parser {
 				let right = self.parse_expression(Precedence::PREFIX)?;
 				prefix_expr.right = Some(right);
 
-				let prefix_expr = Expression::Prefix(prefix_expr);
-				let prefix_expr = Box::new(prefix_expr);
-				Ok(prefix_expr)
+				prefix_expr.into()
 			}
 			other => bail!("No parsing fn exists for the `{:?}` token type", other),
 		}
@@ -231,9 +223,7 @@ impl Parser {
 			self.next_token();
 		}
 
-		let let_stmt = Statement::Let(let_stmt);
-		let let_stmt = Box::new(let_stmt);
-		Ok(let_stmt)
+		let_stmt.into()
 	}
 
 	fn parse_return_statement(&mut self) -> Result<Box<Statement>> {
@@ -254,9 +244,7 @@ impl Parser {
 			self.next_token();
 		}
 
-		let ret_stmt = Statement::Return(ret_stmt);
-		let ret_stmt = Box::new(ret_stmt);
-		Ok(ret_stmt)
+		ret_stmt.into()
 	}
 
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Box<Expression>> {
@@ -293,9 +281,7 @@ impl Parser {
 			self.next_token();
 		}
 
-		let expr_stmt = Statement::Expression(expr_stmt);
-		let expr_stmt = Box::new(expr_stmt);
-		Ok(expr_stmt)
+		expr_stmt.into()
 	}
 
 	fn parse_statement(&mut self) -> Result<Box<Statement>> {

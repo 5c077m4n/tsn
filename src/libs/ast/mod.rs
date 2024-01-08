@@ -1,5 +1,7 @@
 use std::fmt;
 
+use anyhow::Result;
+
 use super::token::Token;
 
 trait Node: fmt::Display {
@@ -12,10 +14,20 @@ pub struct IdentifierExpr {
 	pub token: Token,
 	pub value: String,
 }
+impl Into<Result<Box<Expression>>> for IdentifierExpr {
+	fn into(self) -> Result<Box<Expression>> {
+		Ok(Box::new(Expression::Identifier(self)))
+	}
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct IntegerExpr {
 	pub token: Token,
 	pub value: usize,
+}
+impl Into<Result<Box<Expression>>> for IntegerExpr {
+	fn into(self) -> Result<Box<Expression>> {
+		Ok(Box::new(Expression::Integer(self)))
+	}
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct PrefixExpr {
@@ -24,6 +36,11 @@ pub struct PrefixExpr {
 	pub op: String,
 	pub right: Option<Box<Expression>>,
 }
+impl Into<Result<Box<Expression>>> for PrefixExpr {
+	fn into(self) -> Result<Box<Expression>> {
+		Ok(Box::new(Expression::Prefix(self)))
+	}
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct InfixExpr {
 	/// `Token::Bang` or `Token::Minus`
@@ -31,6 +48,11 @@ pub struct InfixExpr {
 	pub left: Box<Expression>,
 	pub op: String,
 	pub right: Option<Box<Expression>>,
+}
+impl Into<Result<Box<Expression>>> for InfixExpr {
+	fn into(self) -> Result<Box<Expression>> {
+		Ok(Box::new(Expression::Infix(self)))
+	}
 }
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
@@ -84,15 +106,30 @@ pub struct LetStmt {
 	pub name: Option<IdentifierExpr>,
 	pub value: Option<Box<Expression>>,
 }
+impl Into<Result<Box<Statement>>> for LetStmt {
+	fn into(self) -> Result<Box<Statement>> {
+		Ok(Box::new(Statement::Let(self)))
+	}
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct ReturnStmt {
 	pub token: Token,
 	pub return_value: Option<Box<Expression>>,
 }
+impl Into<Result<Box<Statement>>> for ReturnStmt {
+	fn into(self) -> Result<Box<Statement>> {
+		Ok(Box::new(Statement::Return(self)))
+	}
+}
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExpressionStmt {
 	pub token: Token,
 	pub expression: Option<Box<Expression>>,
+}
+impl Into<Result<Box<Statement>>> for ExpressionStmt {
+	fn into(self) -> Result<Box<Statement>> {
+		Ok(Box::new(Statement::Expression(self)))
+	}
 }
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
