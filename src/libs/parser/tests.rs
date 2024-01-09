@@ -124,6 +124,7 @@ fn ident_expr() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
+	assert!(parser.errors().is_empty());
 	assert_eq!(program.statements.len(), 1);
 
 	let expr = program.statements.get(0).unwrap().as_ref();
@@ -152,6 +153,7 @@ fn int_lit_expr() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
+	assert!(parser.errors().is_empty());
 	assert_eq!(program.statements.len(), 1);
 
 	let expr = program.statements.get(0).unwrap().as_ref();
@@ -180,6 +182,7 @@ fn not_prefix_expr() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
+	assert!(parser.errors().is_empty());
 	assert_eq!(program.statements.len(), 1);
 
 	let expr = program.statements.get(0).unwrap().as_ref();
@@ -219,6 +222,7 @@ fn minus_prefix_expr() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
+	assert!(parser.errors().is_empty());
 	assert_eq!(program.statements.len(), 1);
 
 	let expr = program.statements.get(0).unwrap().as_ref();
@@ -268,6 +272,7 @@ fn infix_expr() -> Result<()> {
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
+		assert!(parser.errors().is_empty());
 		assert_eq!(
 			program.statements.len(),
 			1,
@@ -312,6 +317,52 @@ fn infix_expr() -> Result<()> {
 				.map_or("".into(), |r| r.to_string()),
 			test.3.to_string(),
 			"Wrong right expression"
+		);
+	}
+
+	Ok(())
+}
+
+#[test]
+fn operator_precedence_parsing() -> Result<()> {
+	let tests = &[
+		("-a * b;", "((-a) * b)"),
+		("!-a;", "(!(-a))"),
+		("a + b + c;", "((a + b) + c)"),
+		("a + b - c;", "((a + b) - c)"),
+		("a * b * c;", "((a * b) * c)"),
+		("a * b / c;", "((a * b) / c)"),
+		("a + b / c;", "(a + (b / c))"),
+		("a + b * c + d / e - f;", "(((a + (b * c)) + (d / e)) - f)"),
+		("3 + 4; -5 * 5;", "(3 + 4)((-5) * 5)"),
+		("5 > 4 == 3 < 4;", "((5 > 4) == (3 < 4))"),
+		("5 < 4 != 3 > 4;", "((5 < 4) != (3 > 4))"),
+		(
+			"3 + 4 * 5 == 3 * 1 + 4 * 5;",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		),
+	];
+
+	for test in tests {
+		let lexer = Lexer::new(test.0.into());
+		let mut parser = Parser::new(Box::new(lexer));
+		let program = parser.parse_program()?;
+
+		assert!(
+			1 <= program.statements.len() && program.statements.len() <= 2,
+			"Wrong number of statements (in `{}`)",
+			test.0
+		);
+		assert!(
+			parser.errors().is_empty(),
+			"There should be no errors in the parser (in `{}`)",
+			test.0
+		);
+		assert_eq!(
+			test.1,
+			program.to_string(),
+			"There is a problem in the program's string (in `{}`)",
+			test.0
 		);
 	}
 
