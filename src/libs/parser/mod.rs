@@ -83,25 +83,30 @@ impl Parser {
 		p
 	}
 
-	fn current_precedence(&self) -> Result<Precedence> {
-		let Some(ref token) = self.token_current else {
-			bail!("The current token is empty");
-		};
-		Ok(Precedence::from(TokenType::from(token)))
-	}
-	fn peek_precedence(&self) -> Result<Precedence> {
-		let Some(ref token) = self.token_peek else {
-			bail!("The peek token is empty");
-		};
-
-		let t_type = TokenType::from(token);
-		Ok(Precedence::from(t_type))
-	}
-
-	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
+	fn get_current_token(&self) -> Result<&Token> {
 		let Some(token) = self.token_current.as_ref() else {
 			bail!("The current token is empty");
 		};
+		Ok(token)
+	}
+	fn get_peek_token(&self) -> Result<&Token> {
+		let Some(token) = self.token_peek.as_ref() else {
+			bail!("The peek token is empty");
+		};
+		Ok(token)
+	}
+
+	fn current_precedence(&self) -> Result<Precedence> {
+		let token = self.get_current_token()?;
+		Ok(Precedence::from(TokenType::from(token)))
+	}
+	fn peek_precedence(&self) -> Result<Precedence> {
+		let token = self.get_peek_token()?;
+		Ok(Precedence::from(TokenType::from(token)))
+	}
+
+	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
+		let token = self.get_current_token()?;
 
 		let mut infix_expr = InfixExpr {
 			token: token.clone(),
@@ -117,9 +122,7 @@ impl Parser {
 		infix_expr.into()
 	}
 	fn prefix_parse(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
-		let Some(ref token) = self.token_current else {
-			bail!("The current token is empty");
-		};
+		let token = self.get_current_token()?;
 
 		match TokenType::from(token) {
 			TokenType::Identifier => {
@@ -188,9 +191,7 @@ impl Parser {
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
-		let Some(ref token) = self.token_current else {
-			bail!("The current token is empty");
-		};
+		let token = self.get_current_token()?;
 		let token = token.clone();
 
 		let mut let_stmt = LetStmt {
@@ -227,9 +228,7 @@ impl Parser {
 	}
 
 	fn parse_return_statement(&mut self) -> Result<Box<Statement>> {
-		let Some(ref token) = self.token_current else {
-			bail!("The current token is empty");
-		};
+		let token = self.get_current_token()?;
 		let token = token.clone();
 
 		let ret_stmt = ReturnStmt {
@@ -263,9 +262,7 @@ impl Parser {
 	}
 
 	fn parse_expression_statement(&mut self) -> Result<Box<Statement>> {
-		let Some(ref token) = self.token_current else {
-			bail!("The current token is empty");
-		};
+		let token = self.get_current_token()?;
 		let token = token.clone();
 
 		let mut expr_stmt = ExpressionStmt {
