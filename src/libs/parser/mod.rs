@@ -2,6 +2,7 @@ use anyhow::{bail, Result};
 
 use super::{
 	ast::{
+		BooleanExpr,
 		Expression,
 		ExpressionStmt,
 		IdentifierExpr,
@@ -154,6 +155,13 @@ impl Parser {
 				prefix_expr.right = Some(right);
 
 				prefix_expr.into()
+			}
+			TokenType::True | TokenType::False => {
+				let bool_expr = BooleanExpr {
+					token: token.clone(),
+					value: self.current_token_is(TokenType::True),
+				};
+				bool_expr.into()
 			}
 			other => bail!("No parsing fn exists for the `{:?}` token type", other),
 		}

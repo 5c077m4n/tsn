@@ -148,6 +148,37 @@ fn ident_expr() -> Result<()> {
 }
 
 #[test]
+fn bool_lit_expr() -> Result<()> {
+	let tests = &[("true;", true), ("false;", false)];
+
+	for test in tests {
+		let lexer = Lexer::new(test.0.into());
+		let mut parser = Parser::new(Box::new(lexer));
+		let program = parser.parse_program()?;
+
+		assert!(parser.errors().is_empty());
+		assert_eq!(program.statements.len(), 1);
+
+		let expr = program.statements.get(0).unwrap().as_ref();
+		let expr = match expr {
+			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+			other => bail!("Should be an expression, not {:?}", other),
+		};
+
+		let expr_stmt = expr.as_ref().unwrap().as_ref();
+		let ident = match expr_stmt {
+			Expression::Boolean(bool_expr) => bool_expr,
+			other => bail!("Should be a boolean, not {:?}", other),
+		};
+
+		assert_eq!(ident.value, test.1);
+		assert_eq!(ident.token.to_string(), test.1.to_string());
+	}
+
+	Ok(())
+}
+
+#[test]
 fn int_lit_expr() -> Result<()> {
 	let input = "5;";
 
@@ -177,87 +208,85 @@ fn int_lit_expr() -> Result<()> {
 }
 
 #[test]
-fn not_prefix_expr() -> Result<()> {
-	let input = "!5;";
+fn prefix_expr() -> Result<()> {
+	let tests = &[("!5;", "(!5)"), ("-5;", "(-5)")];
 
-	let lexer = Lexer::new(input.into());
-	let mut parser = Parser::new(Box::new(lexer));
-	let program = parser.parse_program()?;
+	for test in tests {
+		let lexer = Lexer::new(test.0.into());
+		let mut parser = Parser::new(Box::new(lexer));
+		let program = parser.parse_program()?;
 
-	assert!(parser.errors().is_empty());
-	assert_eq!(program.statements.len(), 1);
+		assert!(parser.errors().is_empty());
+		assert_eq!(program.statements.len(), 1);
 
-	let expr = program.statements.get(0).unwrap().as_ref();
-	let expr = match expr {
-		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-		other => bail!("Should not have type {:?}", other),
-	};
+		let expr = program.statements.get(0).unwrap().as_ref();
+		let expr = match expr {
+			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+			other => bail!("Should not have type {:?}", other),
+		};
 
-	let expr_stmt = expr.as_ref().unwrap().as_ref();
-	let prefix = match expr_stmt {
-		expr @ Expression::Prefix(_) => expr,
-		other => bail!("Should not have type {:?}", other),
-	};
-	assert_eq!(prefix.to_string(), "(!5)");
+		let expr_stmt = expr.as_ref().unwrap().as_ref();
+		let prefix = match expr_stmt {
+			expr @ Expression::Prefix(_) => expr,
+			other => bail!("Should not have type {:?}", other),
+		};
+		assert_eq!(prefix.to_string(), test.1);
 
-	let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
-		unreachable!("Could not extract the content of the expression")
-	};
+		let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
+			unreachable!("Could not extract the content of the expression")
+		};
 
-	assert_eq!(prefix_expr.op, "!");
-	assert_eq!(
-		prefix_expr
-			.right
-			.as_ref()
-			.map_or("".into(), |r| r.to_string()),
-		"5"
-	);
+		assert_eq!(prefix_expr.op, test.1.chars().nth(1).unwrap().to_string());
+		assert_eq!(
+			prefix_expr
+				.right
+				.as_ref()
+				.map_or("".into(), |r| r.to_string()),
+			"5"
+		);
+	}
+
+	Ok(())
+}
+#[test]
+
+fn prefix_bool_expr() -> Result<()> {
+	let tests = &[("!true;", true), ("!false;", false)];
+
+	for test in tests {
+		let lexer = Lexer::new(test.0.into());
+		let mut parser = Parser::new(Box::new(lexer));
+		let program = parser.parse_program()?;
+
+		assert!(parser.errors().is_empty());
+		assert_eq!(program.statements.len(), 1);
+
+		let expr = program.statements.get(0).unwrap().as_ref();
+		let expr = match expr {
+			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+			other => bail!("Should not have type {:?}", other),
+		};
+
+		let expr_stmt = expr.as_ref().unwrap().as_ref();
+		let Expression::Prefix(ref prefix_expr) = expr_stmt else {
+			unreachable!("Could not extract the content of the expression")
+		};
+
+		assert_eq!(prefix_expr.op, "!");
+		assert_eq!(
+			prefix_expr
+				.right
+				.as_ref()
+				.map_or("".into(), |r| r.to_string()),
+			test.1.to_string()
+		);
+	}
 
 	Ok(())
 }
 
 #[test]
-fn minus_prefix_expr() -> Result<()> {
-	let input = "-5;";
-
-	let lexer = Lexer::new(input.into());
-	let mut parser = Parser::new(Box::new(lexer));
-	let program = parser.parse_program()?;
-
-	assert!(parser.errors().is_empty());
-	assert_eq!(program.statements.len(), 1);
-
-	let expr = program.statements.get(0).unwrap().as_ref();
-	let expr = match expr {
-		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-		other => bail!("Should not have type {:?}", other),
-	};
-
-	let expr_stmt = expr.as_ref().unwrap().as_ref();
-	let prefix = match expr_stmt {
-		expr @ Expression::Prefix(_) => expr,
-		other => bail!("Should not have type {:?}", other),
-	};
-	assert_eq!(prefix.to_string(), "(-5)");
-
-	let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
-		unreachable!("Could not extract the content of the expression")
-	};
-
-	assert_eq!(prefix_expr.op, "-");
-	assert_eq!(
-		prefix_expr
-			.right
-			.as_ref()
-			.map_or("".into(), |r| r.to_string()),
-		"5"
-	);
-
-	Ok(())
-}
-
-#[test]
-fn infix_expr() -> Result<()> {
+fn infix_numbers_expr() -> Result<()> {
 	let tests = &[
 		("5 + 5;", 5, "+", 5),
 		("5 - 5;", 5, "-", 5),
@@ -267,6 +296,70 @@ fn infix_expr() -> Result<()> {
 		("5 > 5;", 5, ">", 5),
 		("5 == 5;", 5, "==", 5),
 		("5 != 5;", 5, "!=", 5),
+	];
+
+	for test in tests {
+		let lexer = Lexer::new(test.0.into());
+		let mut parser = Parser::new(Box::new(lexer));
+		let program = parser.parse_program()?;
+
+		assert!(parser.errors().is_empty());
+		assert_eq!(
+			program.statements.len(),
+			1,
+			"Wrong number of statements for test `{}`",
+			test.0
+		);
+
+		let expr_stmt = program.statements.get(0).unwrap().as_ref();
+		let expr_stmt = match expr_stmt {
+			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
+			other => bail!("Should not have type {:?}", other),
+		};
+
+		let expr_stmt = expr_stmt.as_ref().unwrap().as_ref();
+		let prefix = match expr_stmt {
+			expr @ Expression::Infix(_) => expr,
+			other => bail!(
+				"Should be of type `Expression::Infix`, not `{:?}` (in `{}`)",
+				other,
+				test.0
+			),
+		};
+		assert_eq!(
+			prefix.to_string(),
+			format!("({} {} {})", test.1, test.2, test.3)
+		);
+
+		let Expression::Infix(ref infix_expr) = expr_stmt else {
+			unreachable!("Could not extract the content of the expression")
+		};
+
+		assert_eq!(
+			infix_expr.left.to_string(),
+			test.1.to_string(),
+			"Wrong left expression"
+		);
+		assert_eq!(infix_expr.op, test.2, "Wrong operator");
+		assert_eq!(
+			infix_expr
+				.right
+				.as_ref()
+				.map_or("".into(), |r| r.to_string()),
+			test.3.to_string(),
+			"Wrong right expression"
+		);
+	}
+
+	Ok(())
+}
+
+#[test]
+fn infix_bool_expr() -> Result<()> {
+	let tests = &[
+		("true == true;", true, "==", true),
+		("true != false;", true, "!=", false),
+		("false == false;", false, "==", false),
 	];
 
 	for test in tests {
@@ -343,6 +436,10 @@ fn operator_precedence_parsing() -> Result<()> {
 			"3 + 4 * 5 == 3 * 1 + 4 * 5;",
 			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
 		),
+		("true;", "true"),
+		("false;", "false"),
+		("3 > 5 == false;", "((3 > 5) == false)"),
+		("3 < 5 == true;", "((3 < 5) == true)"),
 	];
 
 	for test in tests {

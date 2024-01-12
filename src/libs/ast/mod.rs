@@ -55,11 +55,23 @@ impl Into<Result<Box<Expression>>> for InfixExpr {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct BooleanExpr {
+	/// `Token::Bang` or `Token::Minus`
+	pub token: Token,
+	pub value: bool,
+}
+impl Into<Result<Box<Expression>>> for BooleanExpr {
+	fn into(self) -> Result<Box<Expression>> {
+		Ok(Box::new(Expression::Boolean(self)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
 	Prefix(PrefixExpr),
 	Infix(InfixExpr),
+	Boolean(BooleanExpr),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
@@ -68,6 +80,7 @@ impl Node for Expression {
 			Self::Integer(IntegerExpr { token, .. }) => token.to_string(),
 			Self::Prefix(PrefixExpr { token, .. }) => token.to_string(),
 			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
+			Self::Boolean(BooleanExpr { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -95,6 +108,7 @@ impl fmt::Display for Expression {
 					right.as_ref().map_or("".into(), |r| r.to_string())
 				)
 			}
+			Self::Boolean(BooleanExpr { value, .. }) => write!(f, "{}", value),
 		}
 	}
 }
