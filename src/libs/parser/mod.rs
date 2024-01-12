@@ -294,10 +294,10 @@ impl Parser {
 		let mut program = Box::new(Program::default());
 
 		while self.token_current.is_some() {
-			if let Ok(s) = self.parse_statement() {
-				program.statements.push(s);
-			}
-
+			match self.parse_statement() {
+				Ok(s) => program.statements.push(s),
+				Err(msg) => self.errors.push(msg.to_string()),
+			};
 			self.next_token();
 		}
 		Ok(program)

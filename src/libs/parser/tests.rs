@@ -59,22 +59,24 @@ fn let_parsing_errors() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let _program = parser.parse_program()?;
 
-	assert_eq!(parser.errors().len(), 3);
 	assert_eq!(
-		parser.errors().get(0),
-		Some(
-			&"Expected the next token to be `Eq`, but got `Some(Integer([53]))` instead"
-				.to_string()
-		)
+		parser.errors().len(),
+		7,
+		"Wrong number of errors, got {:#?}",
+		parser.errors()
 	);
 	assert_eq!(
-		parser.errors().get(1),
-		Some(&"Expected the next token to be `Identifier`, but got `Some(Eq)` instead".to_string())
-	);
-	assert_eq!(
-		parser.errors().get(2),
-		Some(&"Expected the next token to be `Identifier`, but got `Some(Integer([56, 51, 56, 51, 56, 51]))` instead".to_string())
-	);
+        parser.errors(),
+        &[
+            "Expected the next token to be `Eq`, but got `Some(Integer([53]))` instead",
+            "Unexpected token, recieved `Some(Integer([53]))` instead of an `=` sign",
+            "Expected the next token to be `Identifier`, but got `Some(Eq)` instead",
+            "Unexpected token, recieved `Some(Eq)` instead of an identifier",
+            "No parsing fn exists for the `Eq` token type",
+            "Expected the next token to be `Identifier`, but got `Some(Integer([56, 51, 56, 51, 56, 51]))` instead",
+            "Unexpected token, recieved `Some(Integer([56, 51, 56, 51, 56, 51]))` instead of an identifier"
+        ]
+    );
 
 	Ok(())
 }
