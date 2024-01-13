@@ -440,6 +440,11 @@ fn operator_precedence_parsing() -> Result<()> {
 		("false;", "false"),
 		("3 > 5 == false;", "((3 > 5) == false)"),
 		("3 < 5 == true;", "((3 < 5) == true)"),
+		("1 + (2 + 3) + 4;", "((1 + (2 + 3)) + 4)"),
+		("(5 + 5) * 2;", "((5 + 5) * 2)"),
+		("2 / (5 + 5);", "(2 / (5 + 5))"),
+		("-(5 + 5);", "(-(5 + 5))"),
+		("!(true == true);", "(!(true == true))"),
 	];
 
 	for test in tests {
@@ -454,8 +459,9 @@ fn operator_precedence_parsing() -> Result<()> {
 		);
 		assert!(
 			parser.errors().is_empty(),
-			"There should be no errors in the parser (in `{}`)",
-			test.0
+			"There should be no errors in the parser (in `{}`), but got: {:#?}",
+			test.0,
+			parser.errors()
 		);
 		assert_eq!(
 			test.1,

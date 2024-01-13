@@ -163,6 +163,16 @@ impl Parser {
 				};
 				bool_expr.into()
 			}
+			TokenType::OpenParens => {
+				self.next_token();
+				let expr = self.parse_expression(Precedence::LOWEST);
+
+				if !self.expect_peek(TokenType::CloseParens) {
+					bail!("Exected a `)` here but got a `{}`", self.get_peek_token()?)
+				}
+
+				expr.into()
+			}
 			other => bail!("No parsing fn exists for the `{:?}` token type", other),
 		}
 	}
