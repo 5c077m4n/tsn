@@ -66,12 +66,26 @@ impl Into<Result<Box<Expression>>> for BooleanExpr {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct IfExpr {
+	/// `Token::If`
+	pub token: Token,
+	pub cond: Box<Expression>,
+	pub then: Box<BlockStmt>,
+	pub alt: Option<Box<BlockStmt>>,
+}
+impl Into<Result<Box<Expression>>> for IfExpr {
+	fn into(self) -> Result<Box<Expression>> {
+		Ok(Box::new(Expression::If(self)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
 	Prefix(PrefixExpr),
 	Infix(InfixExpr),
 	Boolean(BooleanExpr),
+	If(IfExpr),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
@@ -81,6 +95,7 @@ impl Node for Expression {
 			Self::Prefix(PrefixExpr { token, .. }) => token.to_string(),
 			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
 			Self::Boolean(BooleanExpr { token, .. }) => token.to_string(),
+			Self::If(IfExpr { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -109,6 +124,15 @@ impl fmt::Display for Expression {
 				)
 			}
 			Self::Boolean(BooleanExpr { value, .. }) => write!(f, "{}", value),
+			Self::If(IfExpr {
+				cond, then, alt, ..
+			}) => {
+				write!(f, "if ({}) {{ {} }}", cond.to_string(), then.to_string())?;
+				if let Some(alt) = alt {
+					write!(f, " else {{ {} }}", alt.to_string())?;
+				}
+				Ok(())
+			}
 		}
 	}
 }
@@ -146,10 +170,29 @@ impl Into<Result<Box<Statement>>> for ExpressionStmt {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct BlockStmt {
+	pub token: Token,
+	pub statements: Vec<Statement>,
+}
+impl Into<Result<Box<Statement>>> for BlockStmt {
+	fn into(self) -> Result<Box<Statement>> {
+		Ok(Box::new(Statement::Block(self)))
+	}
+}
+impl fmt::Display for BlockStmt {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		for stmt in &self.statements {
+			write!(f, "{}", stmt.to_string())?;
+		}
+		Ok(())
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
 	Let(LetStmt),
 	Return(ReturnStmt),
 	Expression(ExpressionStmt),
+	Block(BlockStmt),
 }
 impl Node for Statement {
 	fn token_literal(&self) -> String {
@@ -157,6 +200,7 @@ impl Node for Statement {
 			Self::Let(LetStmt { token, .. }) => token.to_string(),
 			Self::Return(ReturnStmt { token, .. }) => token.to_string(),
 			Self::Expression(ExpressionStmt { token, .. }) => token.to_string(),
+			Self::Block(BlockStmt { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -191,6 +235,7 @@ impl fmt::Display for Statement {
 					Err(fmt::Error)
 				}
 			}
+			Self::Block(block_stmt) => write!(f, "{}", block_stmt),
 		}
 	}
 }

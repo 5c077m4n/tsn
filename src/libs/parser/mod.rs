@@ -2,10 +2,12 @@ use anyhow::{bail, Result};
 
 use super::{
 	ast::{
+		BlockStmt,
 		BooleanExpr,
 		Expression,
 		ExpressionStmt,
 		IdentifierExpr,
+		IfExpr,
 		InfixExpr,
 		IntegerExpr,
 		LetStmt,
@@ -29,8 +31,9 @@ static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
 	TokenType::GT,
 ];
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, PartialOrd, Default)]
 enum Precedence {
+	#[default]
 	LOWEST = 0isize,
 	/// `==`
 	EQUALS,
@@ -52,7 +55,7 @@ impl From<TokenType> for Precedence {
 			TokenType::LT | TokenType::GT => Self::LESSGREATER,
 			TokenType::Plus | TokenType::Minus => Self::SUM,
 			TokenType::Asterisk | TokenType::Slash => Self::PRODUCT,
-			_ => Self::LOWEST,
+			_ => Self::default(),
 		}
 	}
 }
@@ -165,7 +168,7 @@ impl Parser {
 			}
 			TokenType::OpenParens => {
 				self.next_token();
-				let expr = self.parse_expression(Precedence::LOWEST);
+				let expr = self.parse_expression(Precedence::default());
 
 				if !self.expect_peek(TokenType::CloseParens) {
 					bail!("Exected a `)` here but got a `{}`", self.get_peek_token()?)
@@ -173,6 +176,7 @@ impl Parser {
 
 				expr.into()
 			}
+			TokenType::If => self.parse_if_expression(),
 			other => bail!("No parsing fn exists for the `{:?}` token type", other),
 		}
 	}
@@ -264,8 +268,54 @@ impl Parser {
 		ret_stmt.into()
 	}
 
+	fn parse_block_statement(&mut self) -> Result<Box<BlockStmt>> {
+		let token = self.get_current_token()?;
+		let token = token.clone();
+
+		let mut block = BlockStmt {
+			token,
+			statements: vec![],
+		};
+		self.next_token();
+
+		while !self.current_token_is(TokenType::CloseCurlyBraces)
+			&& !self.current_token_is(TokenType::EOF)
+		{
+			let stmt = self.parse_statement()?;
+			block.statements.push(*stmt);
+
+			self.next_token();
+		}
+
+		Ok(Box::new(block))
+	}
+
+	fn parse_if_expression(&mut self) -> Result<Box<Expression>> {
+		let token = self.get_current_token()?;
+		let expr = IfExpr {
+			token: token.clone(),
+			cond: {
+				self.next_token();
+				self.parse_expression(Precedence::default())?
+			},
+			then: {
+				if !self.expect_peek(TokenType::CloseParens) {
+					bail!("Expected a `)` token here")
+				}
+				if !self.expect_peek(TokenType::OpenCurlyBraces) {
+					bail!("Expected a `{{` token here")
+				}
+
+				self.parse_block_statement()?
+			},
+			alt: None,
+		};
+
+		expr.into()
+	}
+
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Box<Expression>> {
-		let mut left_expr = self.prefix_parse(Precedence::LOWEST)?;
+		let mut left_expr = self.prefix_parse(Precedence::default())?;
 
 		while !self.peek_token_is(TokenType::Semicolon)
 			&& self.peek_precedence()? > precedence
@@ -288,7 +338,7 @@ impl Parser {
 			expression: None,
 		};
 
-		let expr = self.parse_expression(Precedence::LOWEST)?;
+		let expr = self.parse_expression(Precedence::default())?;
 		expr_stmt.expression = Some(expr);
 
 		// TODO: remove this token skipping
