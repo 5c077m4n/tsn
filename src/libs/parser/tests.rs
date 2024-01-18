@@ -3,7 +3,6 @@ use anyhow::{bail, Result};
 use super::{
 	super::{
 		ast::{
-			BlockStmt,
 			Expression,
 			ExpressionStmt,
 			IdentifierExpr,
@@ -41,9 +40,8 @@ fn let_parsing() -> Result<()> {
 
 		match stmt {
 			Statement::Let(LetStmt { name, .. }) => {
-				assert!(name.is_some());
-				assert_eq!(name.as_ref().unwrap().value, expected);
-				assert_eq!(name.as_ref().unwrap().token.to_string(), expected);
+				assert_eq!(name.value, expected);
+				assert_eq!(name.token.to_string(), expected);
 			}
 			#[allow(unreachable_patterns)]
 			other => assert!(
@@ -247,13 +245,7 @@ fn prefix_expr() -> Result<()> {
 		};
 
 		assert_eq!(prefix_expr.op, test.1.chars().nth(1).unwrap().to_string());
-		assert_eq!(
-			prefix_expr
-				.right
-				.as_ref()
-				.map_or("".into(), |r| r.to_string()),
-			"5"
-		);
+		assert_eq!(prefix_expr.right.to_string(), "5");
 	}
 
 	Ok(())
@@ -283,13 +275,7 @@ fn prefix_bool_expr() -> Result<()> {
 		};
 
 		assert_eq!(prefix_expr.op, "!");
-		assert_eq!(
-			prefix_expr
-				.right
-				.as_ref()
-				.map_or("".into(), |r| r.to_string()),
-			test.1.to_string()
-		);
+		assert_eq!(prefix_expr.right.to_string(), test.1.to_string());
 	}
 
 	Ok(())
@@ -352,10 +338,7 @@ fn infix_numbers_expr() -> Result<()> {
 		);
 		assert_eq!(infix_expr.op, test.2, "Wrong operator");
 		assert_eq!(
-			infix_expr
-				.right
-				.as_ref()
-				.map_or("".into(), |r| r.to_string()),
+			infix_expr.right.to_string(),
 			test.3.to_string(),
 			"Wrong right expression"
 		);
@@ -416,10 +399,7 @@ fn infix_bool_expr() -> Result<()> {
 		);
 		assert_eq!(infix_expr.op, test.2, "Wrong operator");
 		assert_eq!(
-			infix_expr
-				.right
-				.as_ref()
-				.map_or("".into(), |r| r.to_string()),
+			infix_expr.right.to_string(),
 			test.3.to_string(),
 			"Wrong right expression"
 		);
@@ -525,12 +505,10 @@ fn if_expression_parsing() -> Result<()> {
 				value: "x".into()
 			})),
 			op: "<".to_string(),
-			right: Some(Box::new(Expression::Identifier(
-				crate::libs::ast::IdentifierExpr {
-					token: Token::Identifier(b"y".into()),
-					value: "y".into()
-				}
-			)))
+			right: Box::new(Expression::Identifier(crate::libs::ast::IdentifierExpr {
+				token: Token::Identifier(b"y".into()),
+				value: "y".into()
+			}))
 		}),
 		"Wrong condition"
 	);

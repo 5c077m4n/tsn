@@ -34,7 +34,7 @@ pub struct PrefixExpr {
 	/// `Token::Bang` or `Token::Minus`
 	pub token: Token,
 	pub op: String,
-	pub right: Option<Box<Expression>>,
+	pub right: Box<Expression>,
 }
 impl Into<Result<Box<Expression>>> for PrefixExpr {
 	fn into(self) -> Result<Box<Expression>> {
@@ -47,7 +47,7 @@ pub struct InfixExpr {
 	pub token: Token,
 	pub left: Box<Expression>,
 	pub op: String,
-	pub right: Option<Box<Expression>>,
+	pub right: Box<Expression>,
 }
 impl Into<Result<Box<Expression>>> for InfixExpr {
 	fn into(self) -> Result<Box<Expression>> {
@@ -105,23 +105,12 @@ impl fmt::Display for Expression {
 			Self::Identifier(IdentifierExpr { value, .. }) => write!(f, "{}", value),
 			Self::Integer(IntegerExpr { value, .. }) => write!(f, "{}", value),
 			Self::Prefix(PrefixExpr { op, right, .. }) => {
-				write!(
-					f,
-					"({}{})",
-					op,
-					right.as_ref().map_or("".into(), |r| r.to_string())
-				)
+				write!(f, "({}{})", op, right.to_string())
 			}
 			Self::Infix(InfixExpr {
 				left, op, right, ..
 			}) => {
-				write!(
-					f,
-					"({} {} {})",
-					left.to_string(),
-					op,
-					right.as_ref().map_or("".into(), |r| r.to_string())
-				)
+				write!(f, "({} {} {})", left.to_string(), op, right.to_string())
 			}
 			Self::Boolean(BooleanExpr { value, .. }) => write!(f, "{}", value),
 			Self::If(IfExpr {
@@ -141,7 +130,7 @@ impl fmt::Display for Expression {
 pub struct LetStmt {
 	/// Token::Let
 	pub token: Token,
-	pub name: Option<IdentifierExpr>,
+	pub name: IdentifierExpr,
 	pub value: Option<Box<Expression>>,
 }
 impl Into<Result<Box<Statement>>> for LetStmt {
@@ -208,9 +197,6 @@ impl fmt::Display for Statement {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			Self::Let(LetStmt { token, name, value }) => {
-				let name = name
-					.as_ref()
-					.expect("The name of the variable definition should exist by now");
 				write!(f, "{} {}", token.to_string(), name.token.to_string())?;
 
 				if let Some(v) = value {

@@ -111,17 +111,18 @@ impl Parser {
 
 	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
 		let token = self.get_current_token()?;
-
-		let mut infix_expr = InfixExpr {
-			token: token.clone(),
-			left,
-			op: token.to_string(),
-			right: None,
-		};
+		let token = token.clone();
 
 		let precedence = self.current_precedence()?;
 		self.next_token();
-		infix_expr.right = Some(self.parse_expression(precedence)?);
+
+		let right = self.parse_expression(precedence)?;
+		let infix_expr = InfixExpr {
+			token: token.clone(),
+			left,
+			op: token.to_string(),
+			right,
+		};
 
 		infix_expr.into()
 	}
@@ -146,16 +147,17 @@ impl Parser {
 				int_literal.into()
 			}
 			TokenType::Bang | TokenType::Minus => {
-				let mut prefix_expr = PrefixExpr {
-					token: token.clone(),
-					op: token.clone().to_string(),
-					right: None,
-				};
+				let token = self.get_current_token()?;
+				let token = token.clone();
 
 				self.next_token();
 
 				let right = self.parse_expression(Precedence::PREFIX)?;
-				prefix_expr.right = Some(right);
+				let prefix_expr = PrefixExpr {
+					token: token.clone(),
+					op: token.to_string(),
+					right,
+				};
 
 				prefix_expr.into()
 			}
@@ -216,23 +218,22 @@ impl Parser {
 		let token = self.get_current_token()?;
 		let token = token.clone();
 
-		let mut let_stmt = LetStmt {
-			token,
-			name: None,
-			value: None,
-		};
 		if !self.expect_peek(TokenType::Identifier) {
 			bail!(
 				"Unexpected token, recieved `{:?}` instead of an identifier",
 				self.token_peek
 			)
 		}
-		let current_token = self.token_current.as_ref().unwrap();
+		let current_token = self.get_current_token()?;
 		let name = IdentifierExpr {
 			token: current_token.clone(),
 			value: current_token.to_string(),
 		};
-		let_stmt.name = Some(name);
+		let let_stmt = LetStmt {
+			token,
+			name,
+			value: None,
+		};
 
 		if !self.expect_peek(TokenType::Eq) {
 			bail!(
@@ -292,25 +293,29 @@ impl Parser {
 
 	fn parse_if_expression(&mut self) -> Result<Box<Expression>> {
 		let token = self.get_current_token()?;
-		let expr = IfExpr {
-			token: token.clone(),
-			cond: {
-				self.next_token();
-				self.parse_expression(Precedence::default())?
-			},
-			then: {
-				if !self.expect_peek(TokenType::CloseParens) {
-					bail!("Expected a `)` token here")
-				}
-				if !self.expect_peek(TokenType::OpenCurlyBraces) {
-					bail!("Expected a `{{` token here")
-				}
+		let token = token.clone();
 
-				self.parse_block_statement()?
-			},
+		if !self.expect_peek(TokenType::OpenParens) {
+			bail!("Expected a `(` token here")
+		}
+
+		self.next_token();
+		let cond = self.parse_expression(Precedence::default())?;
+
+		if !self.expect_peek(TokenType::CloseParens) {
+			bail!("Expected a `)` token here")
+		}
+		if !self.expect_peek(TokenType::OpenCurlyBraces) {
+			bail!("Expected a `{{` token here")
+		}
+
+		let then = self.parse_block_statement()?;
+		let expr = IfExpr {
+			token,
+			cond,
+			then,
 			alt: None,
 		};
-
 		expr.into()
 	}
 
