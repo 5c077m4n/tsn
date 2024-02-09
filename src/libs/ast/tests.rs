@@ -7,7 +7,7 @@ use super::{
 };
 
 #[test]
-fn let_stmt_string_match() -> Result<()> {
+fn let_stmt_var_assign() -> Result<()> {
 	let program = &Program {
 		statements: vec![Box::new(Statement::Let(LetStmt {
 			token: Token::Let,

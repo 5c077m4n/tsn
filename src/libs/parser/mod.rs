@@ -31,10 +31,10 @@ static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
 	TokenType::GT,
 ];
 
-#[derive(PartialEq, PartialOrd, Default)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Default)]
 enum Precedence {
 	#[default]
-	LOWEST = 0isize,
+	LOWEST,
 	/// `==`
 	EQUALS,
 	/// `>` or `<`

@@ -58,11 +58,7 @@ impl Lexer {
 	}
 
 	fn peek_char(&mut self) -> u8 {
-		if self.read_position < self.input.len() {
-			self.input[self.read_position]
-		} else {
-			b'\0'
-		}
+		*self.input.get(self.read_position).unwrap_or(&b'\0')
 	}
 
 	pub fn next_token(&mut self) -> Token {
