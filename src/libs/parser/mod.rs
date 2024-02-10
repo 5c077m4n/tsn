@@ -243,7 +243,7 @@ impl Parser {
 		}
 
 		// TODO: remove this token skipping
-		while !self.current_token_is(TokenType::Semicolon) {
+		while self.token_current.is_some() && !self.current_token_is(TokenType::Semicolon) {
 			self.next_token();
 		}
 
@@ -262,7 +262,7 @@ impl Parser {
 		self.next_token();
 
 		// TODO: remove this token skipping
-		while !self.current_token_is(TokenType::Semicolon) {
+		while self.token_current.is_some() && !self.current_token_is(TokenType::Semicolon) {
 			self.next_token();
 		}
 
@@ -279,9 +279,7 @@ impl Parser {
 		};
 		self.next_token();
 
-		while !self.current_token_is(TokenType::CloseCurlyBraces)
-			&& !self.current_token_is(TokenType::EOF)
-		{
+		while self.token_current.is_some() && !self.current_token_is(TokenType::CloseCurlyBraces) {
 			let stmt = self.parse_statement()?;
 			block.statements.push(*stmt);
 
@@ -322,7 +320,8 @@ impl Parser {
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Box<Expression>> {
 		let mut left_expr = self.prefix_parse(Precedence::default())?;
 
-		while !self.peek_token_is(TokenType::Semicolon)
+		while self.token_current.is_some()
+			&& !self.peek_token_is(TokenType::Semicolon)
 			&& self.peek_precedence()? > precedence
 			&& self.token_current.as_ref().is_some_and(|t| {
 				let t_type = TokenType::from(t);
@@ -347,7 +346,7 @@ impl Parser {
 		expr_stmt.expression = Some(expr);
 
 		// TODO: remove this token skipping
-		while !self.current_token_is(TokenType::Semicolon) {
+		while self.token_current.is_some() && !self.current_token_is(TokenType::Semicolon) {
 			self.next_token();
 		}
 
