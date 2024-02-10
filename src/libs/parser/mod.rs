@@ -308,12 +308,22 @@ impl Parser {
 		}
 
 		let then = self.parse_block_statement()?;
-		let expr = IfExpr {
+		let mut expr = IfExpr {
 			token,
 			cond,
 			then,
 			alt: None,
 		};
+
+		if self.peek_token_is(TokenType::Else) {
+			self.next_token();
+			if !self.expect_peek(TokenType::OpenCurlyBraces) {
+				bail!("Expected a `{{` token here")
+			}
+
+			expr.alt = Some(self.parse_block_statement()?);
+		}
+
 		expr.into()
 	}
 

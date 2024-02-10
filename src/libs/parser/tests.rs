@@ -466,8 +466,7 @@ fn operator_precedence_parsing() -> Result<()> {
 
 #[test]
 fn if_expression_parsing() -> Result<()> {
-	// TODO: remove final `;`
-	let input = "if (x < y) { x };";
+	let input = "if (x < y) { x }";
 
 	let lexer = Lexer::new(input.into());
 	let mut parser = Parser::new(Box::new(lexer));
@@ -505,15 +504,100 @@ fn if_expression_parsing() -> Result<()> {
 				value: "x".into()
 			})),
 			op: "<".to_string(),
-			right: Box::new(Expression::Identifier(crate::libs::ast::IdentifierExpr {
+			right: Box::new(Expression::Identifier(IdentifierExpr {
 				token: Token::Identifier(b"y".into()),
 				value: "y".into()
 			}))
 		}),
 		"Wrong condition"
 	);
-	assert_eq!(then.statements, vec![], "Wrong `then` statement");
+	assert_eq!(
+		then.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::Identifier(b"x".into()),
+			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
+				token: Token::Identifier(b"x".into()),
+				value: "x".to_string()
+			})))
+		})],
+		"Wrong `then` statement"
+	);
 	assert!(alt.is_none(), "There should be no `else` clause");
+
+	Ok(())
+}
+
+#[test]
+fn if_else_expression_parsing() -> Result<()> {
+	let input = "if (x < y) { x; } else { y }";
+
+	let lexer = Lexer::new(input.into());
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	let Statement::Expression(expr_stmt) = program.statements.get(0).unwrap().as_ref() else {
+		bail!(
+			"The first statement should be and expression, but got a {:?}",
+			program.statements.get(0)
+		)
+	};
+
+	let Expression::If(IfExpr {
+		cond, then, alt, ..
+	}) = expr_stmt.expression.as_ref().unwrap().as_ref()
+	else {
+		bail!(
+			"The first statement should be and expression, but got a {:?}",
+			program.statements.get(0)
+		)
+	};
+
+	assert_eq!(
+		cond.as_ref(),
+		&Expression::Infix(InfixExpr {
+			token: Token::LT,
+			left: Box::new(Expression::Identifier(IdentifierExpr {
+				token: Token::Identifier(b"x".into()),
+				value: "x".into()
+			})),
+			op: "<".to_string(),
+			right: Box::new(Expression::Identifier(IdentifierExpr {
+				token: Token::Identifier(b"y".into()),
+				value: "y".into()
+			}))
+		}),
+		"Wrong condition"
+	);
+	assert_eq!(
+		then.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::Identifier(b"x".into()),
+			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
+				token: Token::Identifier(b"x".into()),
+				value: "x".to_string()
+			})))
+		})],
+		"Wrong `then` statement"
+	);
+
+	assert!(alt.is_some(), "There should be an `else` clause");
+	assert_eq!(
+		alt.as_ref().unwrap().statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::Identifier(b"y".into()),
+			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
+				token: Token::Identifier(b"y".into()),
+				value: "y".to_string()
+			})))
+		})],
+		"Wrong `then` statement"
+	);
 
 	Ok(())
 }
