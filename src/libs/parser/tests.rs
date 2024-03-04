@@ -3,19 +3,12 @@ use anyhow::{bail, Result};
 use super::{
 	super::{
 		ast::{
-			Expression,
-			ExpressionStmt,
-			IdentifierExpr,
-			IfExpr,
-			InfixExpr,
-			LetStmt,
-			ReturnStmt,
+			Expression, ExpressionStmt, IdentifierExpr, IfExpr, InfixExpr, LetStmt, ReturnStmt,
 			Statement,
 		},
 		token::Token,
 	},
-	Lexer,
-	Parser,
+	Lexer, Parser,
 };
 
 #[test]
@@ -36,7 +29,6 @@ fn let_parsing() -> Result<()> {
 	let expected_identifiers = &["x", "y", "foobar"];
 	for (index, &expected) in expected_identifiers.iter().enumerate() {
 		let stmt = program.statements.get(index).unwrap();
-		let stmt = stmt.as_ref();
 
 		match stmt {
 			Statement::Let(LetStmt { name, .. }) => {
@@ -44,11 +36,7 @@ fn let_parsing() -> Result<()> {
 				assert_eq!(name.token.to_string(), expected);
 			}
 			#[allow(unreachable_patterns)]
-			other => assert!(
-				false,
-				"This should have been a let statement, but got {:?}",
-				other
-			),
+			other => unreachable!("This should have been a let statement, but got {:?}", other),
 		};
 	}
 
@@ -120,7 +108,7 @@ fn return_parsing() -> Result<()> {
 	];
 	for (index, stmt) in program.statements.iter().enumerate() {
 		let expected = expected_stmts.get(index).unwrap();
-		assert_eq!(stmt.as_ref(), expected);
+		assert_eq!(stmt, expected);
 	}
 
 	Ok(())
@@ -137,7 +125,7 @@ fn ident_expr() -> Result<()> {
 	assert!(parser.errors().is_empty());
 	assert_eq!(program.statements.len(), 1);
 
-	let expr = program.statements.get(0).unwrap().as_ref();
+	let expr = program.statements.first().unwrap();
 	let expr = match expr {
 		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
 		other => bail!("Should not have type {:?}", other),
@@ -167,7 +155,7 @@ fn bool_lit_expr() -> Result<()> {
 		assert!(parser.errors().is_empty());
 		assert_eq!(program.statements.len(), 1);
 
-		let expr = program.statements.get(0).unwrap().as_ref();
+		let expr = program.statements.first().unwrap();
 		let expr = match expr {
 			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
 			other => bail!("Should be an expression, not {:?}", other),
@@ -197,7 +185,7 @@ fn int_lit_expr() -> Result<()> {
 	assert!(parser.errors().is_empty());
 	assert_eq!(program.statements.len(), 1);
 
-	let expr = program.statements.get(0).unwrap().as_ref();
+	let expr = program.statements.first().unwrap();
 	let expr = match expr {
 		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
 		other => bail!("Should not have type {:?}", other),
@@ -227,7 +215,7 @@ fn prefix_expr() -> Result<()> {
 		assert!(parser.errors().is_empty());
 		assert_eq!(program.statements.len(), 1);
 
-		let expr = program.statements.get(0).unwrap().as_ref();
+		let expr = program.statements.first().unwrap();
 		let expr = match expr {
 			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
 			other => bail!("Should not have type {:?}", other),
@@ -263,7 +251,7 @@ fn prefix_bool_expr() -> Result<()> {
 		assert!(parser.errors().is_empty());
 		assert_eq!(program.statements.len(), 1);
 
-		let expr = program.statements.get(0).unwrap().as_ref();
+		let expr = program.statements.first().unwrap();
 		let expr = match expr {
 			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
 			other => bail!("Should not have type {:?}", other),
@@ -307,7 +295,7 @@ fn infix_numbers_expr() -> Result<()> {
 			test.0
 		);
 
-		let expr_stmt = program.statements.get(0).unwrap().as_ref();
+		let expr_stmt = program.statements.first().unwrap();
 		let expr_stmt = match expr_stmt {
 			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
 			other => bail!("Should not have type {:?}", other),
@@ -368,7 +356,7 @@ fn infix_bool_expr() -> Result<()> {
 			test.0
 		);
 
-		let expr_stmt = program.statements.get(0).unwrap().as_ref();
+		let expr_stmt = program.statements.first().unwrap();
 		let expr_stmt = match expr_stmt {
 			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
 			other => bail!("Should not have type {:?}", other),
@@ -443,7 +431,7 @@ fn operator_precedence_parsing() -> Result<()> {
 		let program = parser.parse_program()?;
 
 		assert!(
-			1 <= program.statements.len() && program.statements.len() <= 2,
+			!program.statements.is_empty() && program.statements.len() <= 2,
 			"Wrong number of statements (in `{}`)",
 			test.0
 		);
@@ -478,10 +466,10 @@ fn if_expression_parsing() -> Result<()> {
 		parser.errors()
 	);
 
-	let Statement::Expression(expr_stmt) = program.statements.get(0).unwrap().as_ref() else {
+	let Statement::Expression(expr_stmt) = program.statements.first().unwrap() else {
 		bail!(
 			"The first statement should be and expression, but got a {:?}",
-			program.statements.get(0)
+			program.statements.first()
 		)
 	};
 
@@ -491,7 +479,7 @@ fn if_expression_parsing() -> Result<()> {
 	else {
 		bail!(
 			"The first statement should be and expression, but got a {:?}",
-			program.statements.get(0)
+			program.statements.first()
 		)
 	};
 
@@ -541,10 +529,10 @@ fn if_else_expression_parsing() -> Result<()> {
 		parser.errors()
 	);
 
-	let Statement::Expression(expr_stmt) = program.statements.get(0).unwrap().as_ref() else {
+	let Statement::Expression(expr_stmt) = program.statements.first().unwrap() else {
 		bail!(
 			"The first statement should be and expression, but got a {:?}",
-			program.statements.get(0)
+			program.statements.first()
 		)
 	};
 
@@ -554,7 +542,7 @@ fn if_else_expression_parsing() -> Result<()> {
 	else {
 		bail!(
 			"The first statement should be and expression, but got a {:?}",
-			program.statements.get(0)
+			program.statements.first()
 		)
 	};
 

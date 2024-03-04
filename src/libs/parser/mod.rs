@@ -2,19 +2,8 @@ use anyhow::{bail, Result};
 
 use super::{
 	ast::{
-		BlockStmt,
-		BooleanExpr,
-		Expression,
-		ExpressionStmt,
-		IdentifierExpr,
-		IfExpr,
-		InfixExpr,
-		IntegerExpr,
-		LetStmt,
-		PrefixExpr,
-		Program,
-		ReturnStmt,
-		Statement,
+		BlockStmt, BooleanExpr, Expression, ExpressionStmt, IdentifierExpr, IfExpr, InfixExpr,
+		IntegerExpr, LetStmt, PrefixExpr, Program, ReturnStmt, Statement,
 	},
 	lexer::Lexer,
 	token::{Token, TokenType},
@@ -34,27 +23,27 @@ static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
 #[derive(PartialEq, Eq, PartialOrd, Ord, Default)]
 enum Precedence {
 	#[default]
-	LOWEST,
+	Lowest,
 	/// `==`
-	EQUALS,
+	Equals,
 	/// `>` or `<`
-	LESSGREATER,
-	/// `+`
-	SUM,
-	/// `*`
-	PRODUCT,
+	LessOrGreater,
+	/// `+` or `-`
+	Sum,
+	/// `*` of `/`
+	Product,
 	/// `-X` or `!X`
-	PREFIX,
+	Prefix,
 	/// `fnCall(X)`
-	CALL,
+	Call,
 }
 impl From<TokenType> for Precedence {
 	fn from(value: TokenType) -> Self {
 		match value {
-			TokenType::EqEq | TokenType::NEq => Self::EQUALS,
-			TokenType::LT | TokenType::GT => Self::LESSGREATER,
-			TokenType::Plus | TokenType::Minus => Self::SUM,
-			TokenType::Asterisk | TokenType::Slash => Self::PRODUCT,
+			TokenType::EqEq | TokenType::NEq => Self::Equals,
+			TokenType::LT | TokenType::GT => Self::LessOrGreater,
+			TokenType::Plus | TokenType::Minus => Self::Sum,
+			TokenType::Asterisk | TokenType::Slash => Self::Product,
 			_ => Self::default(),
 		}
 	}
@@ -152,7 +141,7 @@ impl Parser {
 
 				self.next_token();
 
-				let right = self.parse_expression(Precedence::PREFIX)?;
+				let right = self.parse_expression(Precedence::Prefix)?;
 				let prefix_expr = PrefixExpr {
 					token: token.clone(),
 					op: token.to_string(),
@@ -176,7 +165,7 @@ impl Parser {
 					bail!("Exected a `)` here but got a `{}`", self.get_peek_token()?)
 				}
 
-				expr.into()
+				expr
 			}
 			TokenType::If => self.parse_if_expression(),
 			other => bail!("No parsing fn exists for the `{:?}` token type", other),
@@ -330,13 +319,16 @@ impl Parser {
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Box<Expression>> {
 		let mut left_expr = self.prefix_parse(Precedence::default())?;
 
-		while self.token_current.is_some()
-			&& !self.peek_token_is(TokenType::Semicolon)
-			&& self.peek_precedence()? > precedence
-			&& self.token_current.as_ref().is_some_and(|t| {
+		while {
+			if let Some(ref t) = self.token_current {
 				let t_type = TokenType::from(t);
 				!PREFIX_TOKEN_TYPES.contains(&t_type)
-			}) {
+					&& !self.peek_token_is(TokenType::Semicolon)
+					&& self.peek_precedence()? > precedence
+			} else {
+				false
+			}
+		} {
 			self.next_token();
 			left_expr = self.infix_parse(left_expr)?;
 		}
@@ -373,11 +365,11 @@ impl Parser {
 	}
 
 	pub fn parse_program(&mut self) -> Result<Box<Program>> {
-		let mut program = Box::new(Program::default());
+		let mut program = Box::<Program>::default();
 
 		while self.token_current.is_some() {
 			match self.parse_statement() {
-				Ok(s) => program.statements.push(s),
+				Ok(s) => program.statements.push(*s),
 				Err(msg) => self.errors.push(msg.to_string()),
 			};
 			self.next_token();

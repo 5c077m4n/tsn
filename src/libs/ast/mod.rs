@@ -14,9 +14,9 @@ pub struct IdentifierExpr {
 	pub token: Token,
 	pub value: String,
 }
-impl Into<Result<Box<Expression>>> for IdentifierExpr {
-	fn into(self) -> Result<Box<Expression>> {
-		Ok(Box::new(Expression::Identifier(self)))
+impl From<IdentifierExpr> for Result<Box<Expression>> {
+	fn from(value: IdentifierExpr) -> Self {
+		Ok(Box::new(Expression::Identifier(value)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -24,9 +24,9 @@ pub struct IntegerExpr {
 	pub token: Token,
 	pub value: usize,
 }
-impl Into<Result<Box<Expression>>> for IntegerExpr {
-	fn into(self) -> Result<Box<Expression>> {
-		Ok(Box::new(Expression::Integer(self)))
+impl From<IntegerExpr> for Result<Box<Expression>> {
+	fn from(val: IntegerExpr) -> Self {
+		Ok(Box::new(Expression::Integer(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -36,9 +36,9 @@ pub struct PrefixExpr {
 	pub op: String,
 	pub right: Box<Expression>,
 }
-impl Into<Result<Box<Expression>>> for PrefixExpr {
-	fn into(self) -> Result<Box<Expression>> {
-		Ok(Box::new(Expression::Prefix(self)))
+impl From<PrefixExpr> for Result<Box<Expression>> {
+	fn from(val: PrefixExpr) -> Self {
+		Ok(Box::new(Expression::Prefix(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -49,9 +49,9 @@ pub struct InfixExpr {
 	pub op: String,
 	pub right: Box<Expression>,
 }
-impl Into<Result<Box<Expression>>> for InfixExpr {
-	fn into(self) -> Result<Box<Expression>> {
-		Ok(Box::new(Expression::Infix(self)))
+impl From<InfixExpr> for Result<Box<Expression>> {
+	fn from(val: InfixExpr) -> Self {
+		Ok(Box::new(Expression::Infix(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -60,9 +60,9 @@ pub struct BooleanExpr {
 	pub token: Token,
 	pub value: bool,
 }
-impl Into<Result<Box<Expression>>> for BooleanExpr {
-	fn into(self) -> Result<Box<Expression>> {
-		Ok(Box::new(Expression::Boolean(self)))
+impl From<BooleanExpr> for Result<Box<Expression>> {
+	fn from(val: BooleanExpr) -> Self {
+		Ok(Box::new(Expression::Boolean(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -73,9 +73,9 @@ pub struct IfExpr {
 	pub then: Box<BlockStmt>,
 	pub alt: Option<Box<BlockStmt>>,
 }
-impl Into<Result<Box<Expression>>> for IfExpr {
-	fn into(self) -> Result<Box<Expression>> {
-		Ok(Box::new(Expression::If(self)))
+impl From<IfExpr> for Result<Box<Expression>> {
+	fn from(val: IfExpr) -> Self {
+		Ok(Box::new(Expression::If(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -105,20 +105,20 @@ impl fmt::Display for Expression {
 			Self::Identifier(IdentifierExpr { value, .. }) => write!(f, "{}", value),
 			Self::Integer(IntegerExpr { value, .. }) => write!(f, "{}", value),
 			Self::Prefix(PrefixExpr { op, right, .. }) => {
-				write!(f, "({}{})", op, right.to_string())
+				write!(f, "({}{})", op, right)
 			}
 			Self::Infix(InfixExpr {
 				left, op, right, ..
 			}) => {
-				write!(f, "({} {} {})", left.to_string(), op, right.to_string())
+				write!(f, "({} {} {})", left, op, right)
 			}
 			Self::Boolean(BooleanExpr { value, .. }) => write!(f, "{}", value),
 			Self::If(IfExpr {
 				cond, then, alt, ..
 			}) => {
-				write!(f, "if ({}) {{ {} }}", cond.to_string(), then.to_string())?;
+				write!(f, "if ({}) {{ {} }}", cond, then)?;
 				if let Some(alt) = alt {
-					write!(f, " else {{ {} }}", alt.to_string())?;
+					write!(f, " else {{ {} }}", alt)?;
 				}
 				Ok(())
 			}
@@ -133,9 +133,9 @@ pub struct LetStmt {
 	pub name: IdentifierExpr,
 	pub value: Option<Box<Expression>>,
 }
-impl Into<Result<Box<Statement>>> for LetStmt {
-	fn into(self) -> Result<Box<Statement>> {
-		Ok(Box::new(Statement::Let(self)))
+impl From<LetStmt> for Result<Box<Statement>> {
+	fn from(val: LetStmt) -> Self {
+		Ok(Box::new(Statement::Let(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -143,9 +143,9 @@ pub struct ReturnStmt {
 	pub token: Token,
 	pub return_value: Option<Box<Expression>>,
 }
-impl Into<Result<Box<Statement>>> for ReturnStmt {
-	fn into(self) -> Result<Box<Statement>> {
-		Ok(Box::new(Statement::Return(self)))
+impl From<ReturnStmt> for Result<Box<Statement>> {
+	fn from(val: ReturnStmt) -> Self {
+		Ok(Box::new(Statement::Return(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -153,9 +153,9 @@ pub struct ExpressionStmt {
 	pub token: Token,
 	pub expression: Option<Box<Expression>>,
 }
-impl Into<Result<Box<Statement>>> for ExpressionStmt {
-	fn into(self) -> Result<Box<Statement>> {
-		Ok(Box::new(Statement::Expression(self)))
+impl From<ExpressionStmt> for Result<Box<Statement>> {
+	fn from(val: ExpressionStmt) -> Self {
+		Ok(Box::new(Statement::Expression(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -163,15 +163,15 @@ pub struct BlockStmt {
 	pub token: Token,
 	pub statements: Vec<Statement>,
 }
-impl Into<Result<Box<Statement>>> for BlockStmt {
-	fn into(self) -> Result<Box<Statement>> {
-		Ok(Box::new(Statement::Block(self)))
+impl From<BlockStmt> for Result<Box<Statement>> {
+	fn from(val: BlockStmt) -> Self {
+		Ok(Box::new(Statement::Block(val)))
 	}
 }
 impl fmt::Display for BlockStmt {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		for stmt in &self.statements {
-			write!(f, "{}", stmt.to_string())?;
+			write!(f, "{}", stmt)?;
 		}
 		Ok(())
 	}
@@ -197,10 +197,10 @@ impl fmt::Display for Statement {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			Self::Let(LetStmt { token, name, value }) => {
-				write!(f, "{} {}", token.to_string(), name.token.to_string())?;
+				write!(f, "{} {}", token, name.token)?;
 
 				if let Some(v) = value {
-					write!(f, " = {}", v.to_string())?;
+					write!(f, " = {}", v)?;
 				}
 				write!(f, ";")
 			}
@@ -208,15 +208,15 @@ impl fmt::Display for Statement {
 				token,
 				return_value,
 			}) => {
-				write!(f, "{} ", token.to_string())?;
+				write!(f, "{} ", token)?;
 				if let Some(ret_val) = return_value {
-					write!(f, " = {}", ret_val.to_string())?;
+					write!(f, " = {}", ret_val)?;
 				}
 				write!(f, ";")
 			}
 			Statement::Expression(ExpressionStmt { expression, .. }) => {
 				if let Some(expr) = expression {
-					write!(f, "{}", expr.to_string())
+					write!(f, "{}", expr)
 				} else {
 					Err(fmt::Error)
 				}
@@ -228,7 +228,7 @@ impl fmt::Display for Statement {
 
 #[derive(Default)]
 pub struct Program {
-	pub statements: Vec<Box<Statement>>,
+	pub statements: Vec<Statement>,
 }
 impl Node for Program {
 	fn token_literal(&self) -> String {

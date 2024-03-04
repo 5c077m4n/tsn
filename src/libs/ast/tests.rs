@@ -2,14 +2,13 @@ use anyhow::Result;
 
 use super::{
 	super::ast::{Expression, IdentifierExpr, LetStmt, Statement},
-	Program,
-	Token,
+	Program, Token,
 };
 
 #[test]
 fn let_stmt_var_assign() -> Result<()> {
 	let program = &Program {
-		statements: vec![Box::new(Statement::Let(LetStmt {
+		statements: vec![Statement::Let(LetStmt {
 			token: Token::Let,
 			name: IdentifierExpr {
 				token: Token::Identifier(b"myVar".into()),
@@ -19,7 +18,7 @@ fn let_stmt_var_assign() -> Result<()> {
 				token: Token::Identifier(b"anotherVar".into()),
 				value: "anotherVar".to_string(),
 			}))),
-		}))],
+		})],
 	};
 	assert_eq!(program.to_string(), "let myVar = anotherVar;".to_string());
 
