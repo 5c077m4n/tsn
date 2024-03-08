@@ -9,7 +9,7 @@ use strum_macros::{EnumDiscriminants, EnumIter};
 pub enum Token {
 	Illegal(u8),
 	/// End of file
-	EOF,
+	EndOfFile,
 	Identifier(Vec<u8>),
 	Integer(Vec<u8>),
 	/// `=`
@@ -92,7 +92,7 @@ impl TryFrom<u8> for Token {
 			b'{' => Ok(Token::OpenCurlyBraces),
 			b'}' => Ok(Token::CloseCurlyBraces),
 			b';' => Ok(Token::Semicolon),
-			b'\0' => Ok(Token::EOF),
+			b'\0' => Ok(Token::EndOfFile),
 			_ => bail!("Not found"),
 		}
 	}
@@ -102,7 +102,7 @@ impl fmt::Display for Token {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			Self::Illegal(c) => write!(f, "{}", *c as char),
-			Self::EOF => write!(f, "EOF"),
+			Self::EndOfFile => write!(f, "EOF"),
 			Self::Identifier(ident) => {
 				let ident = String::from_utf8(ident.to_owned()).map_err(|_| fmt::Error)?;
 				write!(f, "{}", ident)

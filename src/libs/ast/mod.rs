@@ -79,6 +79,18 @@ impl From<IfExpr> for Result<Box<Expression>> {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct FunctionLiteralExp {
+	/// `Token::Function`
+	pub token: Token,
+	pub params: Vec<IdentifierExpr>,
+	pub body: Box<BlockStmt>,
+}
+impl From<FunctionLiteralExp> for Result<Box<Expression>> {
+	fn from(val: FunctionLiteralExp) -> Self {
+		Ok(Box::new(Expression::FunctionLiteral(val)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
@@ -86,6 +98,7 @@ pub enum Expression {
 	Infix(InfixExpr),
 	Boolean(BooleanExpr),
 	If(IfExpr),
+	FunctionLiteral(FunctionLiteralExp),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
@@ -96,6 +109,7 @@ impl Node for Expression {
 			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
 			Self::Boolean(BooleanExpr { token, .. }) => token.to_string(),
 			Self::If(IfExpr { token, .. }) => token.to_string(),
+			Self::FunctionLiteral(FunctionLiteralExp { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -121,6 +135,18 @@ impl fmt::Display for Expression {
 					write!(f, " else {{ {} }}", alt)?;
 				}
 				Ok(())
+			}
+			Self::FunctionLiteral(FunctionLiteralExp {
+				token,
+				params,
+				body,
+			}) => {
+				let params = params
+					.iter()
+					.map(|p| p.value.clone())
+					.collect::<Vec<String>>()
+					.join(", ");
+				write!(f, "{} ({}) {}", token, params, body)
 			}
 		}
 	}
