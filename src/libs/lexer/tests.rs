@@ -13,7 +13,7 @@ fn simple_token_read() {
 		Token::Comma,
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -29,7 +29,7 @@ fn let_stmt_token_read() {
 		Token::Integer(b"10".into()),
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -55,7 +55,7 @@ fn math_signs_token_read() {
 		Token::Integer(b"5".into()),
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -110,7 +110,7 @@ fn functional_token_read() {
 		Token::CloseParens,
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -142,7 +142,7 @@ fn if_else_stmt_token_read() {
 		Token::Semicolon,
 		Token::CloseCurlyBraces,
 	];
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);
@@ -164,7 +164,7 @@ fn eq_neq_token_read() {
 		Token::Integer(b"9".into()),
 		Token::Semicolon,
 	];
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let results: Vec<Token> = lexer.into_iter().collect();
 
 	assert_eq!(expected, results);

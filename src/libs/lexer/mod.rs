@@ -1,10 +1,7 @@
 use super::token::Token;
 
 fn is_letter(c: u8) -> bool {
-	b'a' <= c && c <= b'z' || b'A' <= c && c <= b'Z' || c == b'_' || c == b'$'
-}
-fn is_digit(c: u8) -> bool {
-	b'0' <= c && c <= b'9'
+	c.is_ascii_alphabetic() || c == b'_' || c == b'$'
 }
 fn is_whitespace(c: u8) -> bool {
 	c == b' ' || c == b'\t' || c == b'\r' || c == b'\n'
@@ -18,7 +15,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-	pub fn new(input: Box<str>) -> Self {
+	pub fn new(input: &str) -> Self {
 		let mut s = Self {
 			input: input.as_bytes().to_vec(),
 			position: 0,
@@ -30,7 +27,7 @@ impl Lexer {
 	}
 
 	fn read_char(&mut self) {
-		self.c = self.input.iter().nth(self.read_position).copied();
+		self.c = self.input.get(self.read_position).copied();
 		self.position = self.read_position;
 		self.read_position += 1;
 	}
@@ -45,7 +42,7 @@ impl Lexer {
 
 	fn read_number(&mut self) -> Vec<u8> {
 		let position = self.position;
-		while self.c.map_or(false, is_digit) {
+		while self.c.map_or(false, |c| c.is_ascii_digit()) {
 			self.read_char();
 		}
 		self.input[position..self.position].to_vec()
@@ -85,7 +82,7 @@ impl Lexer {
 				if is_letter(c) {
 					let ident = self.read_identifier();
 					Token::from(ident)
-				} else if is_digit(c) {
+				} else if c.is_ascii_digit() {
 					let number = self.read_number();
 					Token::Integer(number)
 				} else {

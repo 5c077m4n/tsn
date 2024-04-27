@@ -19,7 +19,7 @@ fn let_parsing() -> Result<()> {
     let foobar = 838383;
     "#;
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
@@ -51,7 +51,7 @@ fn let_parsing_errors() -> Result<()> {
     let 838383;
     "#;
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let _program = parser.parse_program()?;
 
@@ -85,7 +85,7 @@ fn return_parsing() -> Result<()> {
     return 993322;
     "#;
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
@@ -118,7 +118,7 @@ fn return_parsing() -> Result<()> {
 fn ident_expr() -> Result<()> {
 	let input = "foobar;";
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
@@ -148,7 +148,7 @@ fn bool_lit_expr() -> Result<()> {
 	let tests = &[("true;", true), ("false;", false)];
 
 	for test in tests {
-		let lexer = Lexer::new(test.0.into());
+		let lexer = Lexer::new(test.0);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
@@ -178,7 +178,7 @@ fn bool_lit_expr() -> Result<()> {
 fn int_lit_expr() -> Result<()> {
 	let input = "5;";
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
@@ -208,7 +208,7 @@ fn prefix_expr() -> Result<()> {
 	let tests = &[("!5;", "(!5)"), ("-5;", "(-5)")];
 
 	for test in tests {
-		let lexer = Lexer::new(test.0.into());
+		let lexer = Lexer::new(test.0);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
@@ -244,7 +244,7 @@ fn prefix_bool_expr() -> Result<()> {
 	let tests = &[("!true;", true), ("!false;", false)];
 
 	for test in tests {
-		let lexer = Lexer::new(test.0.into());
+		let lexer = Lexer::new(test.0);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
@@ -283,7 +283,7 @@ fn infix_numbers_expr() -> Result<()> {
 	];
 
 	for test in tests {
-		let lexer = Lexer::new(test.0.into());
+		let lexer = Lexer::new(test.0);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
@@ -344,7 +344,7 @@ fn infix_bool_expr() -> Result<()> {
 	];
 
 	for test in tests {
-		let lexer = Lexer::new(test.0.into());
+		let lexer = Lexer::new(test.0);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
@@ -426,7 +426,7 @@ fn operator_precedence_parsing() -> Result<()> {
 	];
 
 	for test in tests {
-		let lexer = Lexer::new(test.0.into());
+		let lexer = Lexer::new(test.0);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
@@ -456,7 +456,7 @@ fn operator_precedence_parsing() -> Result<()> {
 fn if_expression_parsing() -> Result<()> {
 	let input = "if (x < y) { x }";
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
@@ -519,7 +519,7 @@ fn if_expression_parsing() -> Result<()> {
 fn if_else_expression_parsing() -> Result<()> {
 	let input = "if (x < y) { x; } else { y }";
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
@@ -594,7 +594,7 @@ fn if_else_expression_parsing() -> Result<()> {
 fn function_literal_expression_parsing() -> Result<()> {
 	let input = "function (x, y) { x + y; }";
 
-	let lexer = Lexer::new(input.into());
+	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
