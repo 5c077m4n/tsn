@@ -114,7 +114,7 @@ impl Lexer {
 			Token::Illegal(c.to_string())
 		};
 
-		TokenData::new(token, start_position)
+		TokenData::new(token, start_position, &self.input)
 	}
 }
 

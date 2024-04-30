@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, Display};
 
 use strum_macros::{EnumDiscriminants, EnumIter};
 
@@ -142,21 +142,64 @@ impl fmt::Display for Token {
 	}
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Location {
+	start_line: usize,
+	start_column: usize,
+	end_line: usize,
+	end_column: usize,
+}
+impl Display for Location {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let Self {
+			start_line,
+			start_column,
+			end_line,
+			end_column,
+		} = self;
+		write!(
+			f,
+			"{}:{}-{}:{}",
+			start_line, start_column, end_line, end_column
+		)
+	}
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenData {
 	token: Token,
-	position: usize,
+	location: Location,
 }
 impl TokenData {
-	pub fn new(token: Token, position: usize) -> Self {
-		Self { token, position }
+	pub fn new(token: Token, start_position: usize, input: &[u8]) -> Self {
+		let end_position = start_position + token.to_string().len();
+
+		let mut loc = Location::default();
+		let mut counter = 0;
+
+		for (index, line) in input.split(|&c| c == b'\n').enumerate() {
+			if (counter..counter + line.len()).contains(&start_position) {
+				loc.start_line = index + 1;
+				loc.start_column = start_position - counter + 1;
+			}
+			if (counter..=counter + line.len()).contains(&end_position) {
+				loc.end_line = index + 1;
+				loc.end_column = end_position - counter + 1;
+			}
+			counter += line.len();
+		}
+
+		Self {
+			token,
+			location: loc,
+		}
 	}
 
 	pub fn token(&self) -> &Token {
 		&self.token
 	}
-	pub fn position(&self) -> usize {
-		self.position
+	pub fn location(&self) -> &Location {
+		&self.location
 	}
 	pub fn is_whitespace(&self) -> bool {
 		matches!(

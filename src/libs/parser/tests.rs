@@ -63,13 +63,13 @@ fn let_parsing_errors() -> Result<()> {
 	);
 
 	let expected = &[
-		r#"Expected the next token to be `Equal`, but got `Some(TokenData { token: Integer("5"), position: 11 })` instead"#,
-		r#"Unexpected token, recieved `Some(TokenData { token: Integer("5"), position: 11 })` instead of an `=` sign"#,
-		"Expected the next token to be `Identifier`, but got `Some(TokenData { token: Equal, position: 22 })` instead",
-		"Unexpected token, recieved `Some(TokenData { token: Equal, position: 22 })` instead of an identifier",
-		"No parsing fn exists for the `Equal` token type",
-		r#"Expected the next token to be `Identifier`, but got `Some(TokenData { token: Integer("838383"), position: 36 })` instead"#,
-		r#"Unexpected token, recieved `Some(TokenData { token: Integer("838383"), position: 36 })` instead of an identifier"#,
+		r#"Expected the next token to be `Equal`, but got `Integer("5")` @ 2:12-3:1 instead"#,
+		r#"Unexpected token, recieved `Integer("5")` @ 2:12-3:1 instead of an `=` sign"#,
+		r#"Expected the next token to be `Identifier`, but got `Equal` @ 3:11-3:12 instead"#,
+		r#"Unexpected token, recieved `Equal` @ 3:11-3:12 instead of an identifier"#,
+		r#"No parsing fn exists for the `Equal` token type"#,
+		r#"Expected the next token to be `Identifier`, but got `Integer("838383")` @ 4:12-5:3 instead"#,
+		r#"Unexpected token, recieved `Integer("838383")` @ 4:12-5:3 instead of an identifier"#,
 	];
 	assert_eq!(parser.errors(), expected);
 

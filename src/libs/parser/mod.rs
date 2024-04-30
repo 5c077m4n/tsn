@@ -188,10 +188,22 @@ impl Parser {
 	}
 
 	fn peek_error(&mut self, t: TokenType) {
-		let msg = format!(
-			"Expected the next token to be `{:?}`, but got `{:?}` instead",
-			t, self.token_peek
-		);
+		let msg = match &self.token_peek {
+			Some(token_data) => {
+				format!(
+					"Expected the next token to be `{:?}`, but got `{:?}` @ {} instead",
+					t,
+					token_data.token(),
+					token_data.location()
+				)
+			}
+			None => {
+				format!(
+					"Expected the next token to be `{:?}`, but got nothing instead",
+					t
+				)
+			}
+		};
 		self.errors.push(msg);
 	}
 	fn expect_peek(&mut self, t: TokenType) -> bool {
@@ -209,10 +221,15 @@ impl Parser {
 		let token = token.clone();
 
 		if !self.expect_peek(TokenType::Identifier) {
-			bail!(
-				"Unexpected token, recieved `{:?}` instead of an identifier",
-				self.token_peek
-			)
+			let msg = match &self.token_peek {
+				Some(token_data) => format!(
+					"Unexpected token, recieved `{:?}` @ {} instead of an identifier",
+					token_data.token(),
+					token_data.location()
+				),
+				None => "Expected an identifier here, but got nothing".to_string(),
+			};
+			bail!(msg)
 		}
 		let current_token = self.get_current_token()?;
 		let name = IdentifierExpr {
@@ -226,10 +243,15 @@ impl Parser {
 		};
 
 		if !self.expect_peek(TokenType::Equal) {
-			bail!(
-				"Unexpected token, recieved `{:?}` instead of an `=` sign",
-				self.token_peek
-			);
+			let msg = match &self.token_peek {
+				Some(token_data) => format!(
+					"Unexpected token, recieved `{:?}` @ {} instead of an `=` sign",
+					token_data.token(),
+					token_data.location()
+				),
+				None => "Expected an `=` sign here, but got nothing".to_string(),
+			};
+			bail!(msg)
 		}
 
 		// TODO: remove this token skipping
