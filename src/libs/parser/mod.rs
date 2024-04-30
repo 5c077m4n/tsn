@@ -6,7 +6,7 @@ use super::{
 		IfExpr, InfixExpr, IntegerExpr, LetStmt, PrefixExpr, Program, ReturnStmt, Statement,
 	},
 	lexer::Lexer,
-	token::{Token, TokenType},
+	token::{Token, TokenData, TokenType},
 };
 
 static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
@@ -53,13 +53,13 @@ impl From<TokenType> for Precedence {
 pub struct Parser {
 	lexer: Box<Lexer>,
 	errors: Vec<String>,
-	token_current: Option<Token>,
-	token_peek: Option<Token>,
+	token_current: Option<TokenData>,
+	token_peek: Option<TokenData>,
 }
 impl Parser {
 	fn next_token(&mut self) {
 		self.token_current = self.token_peek.to_owned();
-		self.token_peek = self.lexer.next().map(|td| td.token().clone());
+		self.token_peek = self.lexer.next();
 	}
 
 	pub fn new(lexer: Box<Lexer>) -> Self {
@@ -76,16 +76,16 @@ impl Parser {
 	}
 
 	fn get_current_token(&self) -> Result<&Token> {
-		let Some(token) = self.token_current.as_ref() else {
+		let Some(token_data) = self.token_current.as_ref() else {
 			bail!("The current token is empty");
 		};
-		Ok(token)
+		Ok(token_data.token())
 	}
 	fn get_peek_token(&self) -> Result<&Token> {
-		let Some(token) = self.token_peek.as_ref() else {
+		let Some(token_data) = self.token_peek.as_ref() else {
 			bail!("The peek token is empty");
 		};
-		Ok(token)
+		Ok(token_data.token())
 	}
 
 	fn current_precedence(&self) -> Result<Precedence> {
@@ -179,12 +179,12 @@ impl Parser {
 	fn current_token_is(&self, t: TokenType) -> bool {
 		self.token_current
 			.as_ref()
-			.is_some_and(|token| TokenType::from(token) == t)
+			.is_some_and(|token_data| TokenType::from(token_data.token()) == t)
 	}
 	fn peek_token_is(&self, t: TokenType) -> bool {
 		self.token_peek
 			.as_ref()
-			.is_some_and(|token| TokenType::from(token) == t)
+			.is_some_and(|token_data| TokenType::from(token_data.token()) == t)
 	}
 
 	fn peek_error(&mut self, t: TokenType) {
@@ -390,9 +390,9 @@ impl Parser {
 		let mut left_expr = self.prefix_parse(Precedence::default())?;
 
 		while {
-			if let Some(ref t) = self.token_current {
-				let t_type = TokenType::from(t);
-				!PREFIX_TOKEN_TYPES.contains(&t_type)
+			if let Some(ref token_data) = self.token_current {
+				let token_type = TokenType::from(token_data.token());
+				!PREFIX_TOKEN_TYPES.contains(&token_type)
 					&& !self.peek_token_is(TokenType::Semicolon)
 					&& self.peek_precedence()? > precedence
 			} else {
@@ -426,7 +426,7 @@ impl Parser {
 	}
 
 	fn parse_statement(&mut self) -> Result<Box<Statement>> {
-		match &self.token_current {
+		match self.token_current.clone().map(|td| td.token().to_owned()) {
 			Some(Token::Let) => self.parse_let_statement(),
 			Some(Token::Return) => self.parse_return_statement(),
 			None => bail!("The current token should not be empty here"),

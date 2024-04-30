@@ -142,7 +142,7 @@ impl fmt::Display for Token {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenData {
 	token: Token,
 	position: usize,
@@ -154,6 +154,9 @@ impl TokenData {
 
 	pub fn token(&self) -> &Token {
 		&self.token
+	}
+	pub fn position(&self) -> usize {
+		self.position
 	}
 	pub fn is_whitespace(&self) -> bool {
 		matches!(
