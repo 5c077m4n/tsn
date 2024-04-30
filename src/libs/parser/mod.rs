@@ -14,10 +14,10 @@ static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
 	TokenType::Minus,
 	TokenType::Slash,
 	TokenType::Asterisk,
-	TokenType::EqEq,
+	TokenType::DoubleEqual,
 	TokenType::NEq,
-	TokenType::LT,
-	TokenType::GT,
+	TokenType::LessThan,
+	TokenType::GreaterThan,
 ];
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -40,10 +40,11 @@ enum Precedence {
 impl From<TokenType> for Precedence {
 	fn from(value: TokenType) -> Self {
 		match value {
-			TokenType::EqEq | TokenType::NEq => Self::Equals,
-			TokenType::LT | TokenType::GT => Self::LessOrGreater,
+			TokenType::DoubleEqual | TokenType::NEq => Self::Equals,
+			TokenType::LessThan | TokenType::GreaterThan => Self::LessOrGreater,
 			TokenType::Plus | TokenType::Minus => Self::Sum,
 			TokenType::Asterisk | TokenType::Slash => Self::Product,
+			TokenType::OpenParens => Self::Call,
 			_ => Self::default(),
 		}
 	}
@@ -52,21 +53,19 @@ impl From<TokenType> for Precedence {
 pub struct Parser {
 	lexer: Box<Lexer>,
 	errors: Vec<String>,
-	// token holders
 	token_current: Option<Token>,
 	token_peek: Option<Token>,
 }
 impl Parser {
 	fn next_token(&mut self) {
 		self.token_current = self.token_peek.to_owned();
-		self.token_peek = self.lexer.next();
+		self.token_peek = self.lexer.next().map(|td| td.token().clone());
 	}
 
 	pub fn new(lexer: Box<Lexer>) -> Self {
 		let mut p = Self {
 			lexer,
 			errors: vec![],
-
 			token_current: None,
 			token_peek: None,
 		};
@@ -226,7 +225,7 @@ impl Parser {
 			value: None,
 		};
 
-		if !self.expect_peek(TokenType::Eq) {
+		if !self.expect_peek(TokenType::Equal) {
 			bail!(
 				"Unexpected token, recieved `{:?}` instead of an `=` sign",
 				self.token_peek

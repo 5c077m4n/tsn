@@ -28,16 +28,16 @@ fn let_parsing() -> Result<()> {
 
 	let expected_identifiers = &["x", "y", "foobar"];
 	for (index, &expected) in expected_identifiers.iter().enumerate() {
-		let stmt = program.statements.get(index).unwrap();
+		let stmt = program
+			.statements
+			.get(index)
+			.expect("Could not get the requested statement");
 
-		match stmt {
-			Statement::Let(LetStmt { name, .. }) => {
-				assert_eq!(name.value, expected);
-				assert_eq!(name.token.to_string(), expected);
-			}
-			#[allow(unreachable_patterns)]
-			other => unreachable!("This should have been a let statement, but got {:?}", other),
+		let Statement::Let(LetStmt { name, .. }) = stmt else {
+			bail!("This should have been a let statement, but got {:?}", stmt);
 		};
+		assert_eq!(name.value, expected);
+		assert_eq!(name.token.to_string(), expected);
 	}
 
 	Ok(())
@@ -61,18 +61,17 @@ fn let_parsing_errors() -> Result<()> {
 		"Wrong number of errors, got {:#?}",
 		parser.errors()
 	);
-	assert_eq!(
-        parser.errors(),
-        &[
-            "Expected the next token to be `Eq`, but got `Some(Integer([53]))` instead",
-            "Unexpected token, recieved `Some(Integer([53]))` instead of an `=` sign",
-            "Expected the next token to be `Identifier`, but got `Some(Eq)` instead",
-            "Unexpected token, recieved `Some(Eq)` instead of an identifier",
-            "No parsing fn exists for the `Eq` token type",
-            "Expected the next token to be `Identifier`, but got `Some(Integer([56, 51, 56, 51, 56, 51]))` instead",
-            "Unexpected token, recieved `Some(Integer([56, 51, 56, 51, 56, 51]))` instead of an identifier"
-        ]
-    );
+
+	let expected = &[
+		r#"Expected the next token to be `Equal`, but got `Some(Integer("5"))` instead"#,
+		r#"Unexpected token, recieved `Some(Integer("5"))` instead of an `=` sign"#,
+		"Expected the next token to be `Identifier`, but got `Some(Equal)` instead",
+		"Unexpected token, recieved `Some(Equal)` instead of an identifier",
+		"No parsing fn exists for the `Equal` token type",
+		r#"Expected the next token to be `Identifier`, but got `Some(Integer("838383"))` instead"#,
+		r#"Unexpected token, recieved `Some(Integer("838383"))` instead of an identifier"#,
+	];
+	assert_eq!(parser.errors(), expected);
 
 	Ok(())
 }
@@ -229,7 +228,10 @@ fn prefix_expr() -> Result<()> {
 		assert_eq!(prefix.to_string(), test.1);
 
 		let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
-			unreachable!("Could not extract the content of the expression")
+			bail!(
+				"Expected a prefix expression but got: `{}`",
+				**expr.as_ref().unwrap()
+			)
 		};
 
 		assert_eq!(prefix_expr.op, test.1.chars().nth(1).unwrap().to_string());
@@ -486,14 +488,14 @@ fn if_expression_parsing() -> Result<()> {
 	assert_eq!(
 		cond.as_ref(),
 		&Expression::Infix(InfixExpr {
-			token: Token::LT,
+			token: Token::LessThan,
 			left: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"x".into()),
+				token: Token::Identifier("x".into()),
 				value: "x".into()
 			})),
 			op: "<".to_string(),
 			right: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"y".into()),
+				token: Token::Identifier("y".into()),
 				value: "y".into()
 			}))
 		}),
@@ -502,9 +504,9 @@ fn if_expression_parsing() -> Result<()> {
 	assert_eq!(
 		then.statements,
 		vec![Statement::Expression(ExpressionStmt {
-			token: Token::Identifier(b"x".into()),
+			token: Token::Identifier("x".into()),
 			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"x".into()),
+				token: Token::Identifier("x".into()),
 				value: "x".to_string()
 			})))
 		})],
@@ -549,14 +551,14 @@ fn if_else_expression_parsing() -> Result<()> {
 	assert_eq!(
 		cond.as_ref(),
 		&Expression::Infix(InfixExpr {
-			token: Token::LT,
+			token: Token::LessThan,
 			left: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"x".into()),
+				token: Token::Identifier("x".into()),
 				value: "x".into()
 			})),
 			op: "<".to_string(),
 			right: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"y".into()),
+				token: Token::Identifier("y".into()),
 				value: "y".into()
 			}))
 		}),
@@ -565,9 +567,9 @@ fn if_else_expression_parsing() -> Result<()> {
 	assert_eq!(
 		then.statements,
 		vec![Statement::Expression(ExpressionStmt {
-			token: Token::Identifier(b"x".into()),
+			token: Token::Identifier("x".into()),
 			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"x".into()),
+				token: Token::Identifier("x".into()),
 				value: "x".to_string()
 			})))
 		})],
@@ -578,9 +580,9 @@ fn if_else_expression_parsing() -> Result<()> {
 	assert_eq!(
 		alt.as_ref().unwrap().statements,
 		vec![Statement::Expression(ExpressionStmt {
-			token: Token::Identifier(b"y".into()),
+			token: Token::Identifier("y".into()),
 			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"y".into()),
+				token: Token::Identifier("y".into()),
 				value: "y".to_string()
 			})))
 		})],
@@ -624,14 +626,14 @@ fn function_literal_expression_parsing() -> Result<()> {
 	assert_eq!(
 		cond.as_ref(),
 		&Expression::Infix(InfixExpr {
-			token: Token::LT,
+			token: Token::LessThan,
 			left: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"x".into()),
+				token: Token::Identifier("x".into()),
 				value: "x".into()
 			})),
 			op: "<".to_string(),
 			right: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"y".into()),
+				token: Token::Identifier("y".into()),
 				value: "y".into()
 			}))
 		}),
@@ -640,9 +642,9 @@ fn function_literal_expression_parsing() -> Result<()> {
 	assert_eq!(
 		then.statements,
 		vec![Statement::Expression(ExpressionStmt {
-			token: Token::Identifier(b"x".into()),
+			token: Token::Identifier("x".into()),
 			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"x".into()),
+				token: Token::Identifier("x".into()),
 				value: "x".to_string()
 			})))
 		})],
@@ -653,9 +655,9 @@ fn function_literal_expression_parsing() -> Result<()> {
 	assert_eq!(
 		alt.as_ref().unwrap().statements,
 		vec![Statement::Expression(ExpressionStmt {
-			token: Token::Identifier(b"y".into()),
+			token: Token::Identifier("y".into()),
 			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"y".into()),
+				token: Token::Identifier("y".into()),
 				value: "y".to_string()
 			})))
 		})],

@@ -11,11 +11,11 @@ fn let_stmt_var_assign() -> Result<()> {
 		statements: vec![Statement::Let(LetStmt {
 			token: Token::Let,
 			name: IdentifierExpr {
-				token: Token::Identifier(b"myVar".into()),
+				token: Token::Identifier("myVar".into()),
 				value: "myVar".to_string(),
 			},
 			value: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier(b"anotherVar".into()),
+				token: Token::Identifier("anotherVar".into()),
 				value: "anotherVar".to_string(),
 			}))),
 		})],
