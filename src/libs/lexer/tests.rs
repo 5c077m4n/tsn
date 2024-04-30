@@ -184,3 +184,31 @@ fn eq_neq_token_read() {
 
 	assert_eq!(expected, results);
 }
+
+#[test]
+fn single_quote_string() {
+	let input = "'some string here'";
+	let expected = vec![TokenData::new(
+		Token::String("'some string here'".into()),
+		0,
+		input.as_bytes(),
+	)];
+	let lexer = Lexer::new(input);
+	let results: Vec<TokenData> = lexer.collect();
+
+	assert_eq!(expected, results);
+}
+
+#[test]
+fn double_quote_string() {
+	let input = r#""some string here""#;
+	let expected = vec![TokenData::new(
+		Token::String(r#""some string here""#.into()),
+		0,
+		input.as_bytes(),
+	)];
+	let lexer = Lexer::new(input);
+	let results: Vec<TokenData> = lexer.collect();
+
+	assert_eq!(expected, results);
+}

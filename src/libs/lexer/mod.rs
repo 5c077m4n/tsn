@@ -12,6 +12,14 @@ pub struct Lexer {
 }
 
 impl Lexer {
+	fn read_char(&mut self) -> Option<u8> {
+		self.c = self.input.get(self.read_position).copied();
+		self.position = self.read_position;
+		self.read_position += 1;
+
+		self.c
+	}
+
 	pub fn new(input: &str) -> Self {
 		let mut s = Self {
 			input: input.as_bytes().to_vec(),
@@ -23,34 +31,47 @@ impl Lexer {
 		s
 	}
 
-	fn read_char(&mut self) {
-		self.c = self.input.get(self.read_position).copied();
-		self.position = self.read_position;
-		self.read_position += 1;
+	fn peek_char(&self) -> u8 {
+		*self.input.get(self.read_position).unwrap_or(&b'\0')
+	}
+	fn current_char(&self) -> u8 {
+		self.c.unwrap_or(b'\0')
 	}
 
 	fn read_identifier(&mut self) -> &[u8] {
-		let position = self.position;
-		while self.c.is_some_and(|c| is_letter(c) || c.is_ascii_digit()) {
+		let start_position = self.position;
+		self.read_char();
+
+		while is_letter(self.current_char()) || self.current_char().is_ascii_digit() {
 			self.read_char();
 		}
-		&self.input[position..self.position]
+		&self.input[start_position..self.position]
 	}
 
 	fn read_number(&mut self) -> &[u8] {
-		let position = self.position;
-		while self.c.is_some_and(|c| c.is_ascii_digit()) {
+		let start_position = self.position;
+		self.read_char();
+
+		while self.current_char().is_ascii_digit() {
 			self.read_char();
 		}
-		&self.input[position..self.position]
+		&self.input[start_position..self.position]
 	}
 
-	fn peek_char(&mut self) -> u8 {
-		*self.input.get(self.read_position).unwrap_or(&b'\0')
+	fn read_string(&mut self, quote_type: u8) -> &[u8] {
+		let start_position = self.position;
+		self.read_char();
+
+		while self.current_char() != quote_type {
+			self.read_char();
+		}
+		self.read_char(); // To include the final quote sign in the literal itself
+
+		&self.input[start_position..self.position]
 	}
 
 	pub fn next_token(&mut self) -> TokenData {
-		let c = self.c.unwrap_or(b'\0');
+		let c = self.current_char();
 		let peek = self.peek_char();
 		let start_position = self.position;
 
@@ -101,17 +122,28 @@ impl Lexer {
 		let token = if let Some(token) = token {
 			self.read_char();
 			token
-		} else if is_letter(c) {
-			let ident = self.read_identifier();
-			Token::from(ident)
-		} else if c.is_ascii_digit() {
-			let number = self.read_number();
-			match String::from_utf8(number.to_owned()) {
-				Ok(n) => Token::Integer(n),
-				Err(_) => Token::Illegal(c.to_string()),
-			}
 		} else {
-			Token::Illegal(c.to_string())
+			match c {
+				b'\'' | b'"' => {
+					let s = self.read_string(c);
+					match String::from_utf8(s.to_owned()) {
+						Ok(s) => Token::String(s),
+						Err(_) => Token::Illegal(c.to_string()),
+					}
+				}
+				c if is_letter(c) => {
+					let ident = self.read_identifier();
+					Token::from(ident)
+				}
+				c if c.is_ascii_digit() => {
+					let number = self.read_number();
+					match String::from_utf8(number.to_owned()) {
+						Ok(n) => Token::Integer(n),
+						Err(_) => Token::Illegal(c.to_string()),
+					}
+				}
+				c => Token::Illegal(c.to_string()),
+			}
 		};
 
 		TokenData::new(token, start_position, &self.input)

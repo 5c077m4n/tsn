@@ -10,6 +10,7 @@ pub enum Token {
 	EndOfFile,
 	Identifier(String),
 	Integer(String),
+	String(String),
 	/// `=`
 	Equal,
 	/// `+`
@@ -26,6 +27,10 @@ pub enum Token {
 	Ampersand,
 	/// `|`
 	Pipe,
+	/// `'`
+	Quote,
+	/// `"`
+	DoubleQuote,
 	/// `<`
 	LessThan,
 	/// `<=`
@@ -107,6 +112,7 @@ impl fmt::Display for Token {
 			Self::EndOfFile => write!(f, "EOF"),
 			Self::Identifier(ident) => write!(f, "{}", ident),
 			Self::Integer(n) => write!(f, "{}", n),
+			Self::String(s) => write!(f, "{}", s),
 			Self::Equal => write!(f, "="),
 			Self::Plus => write!(f, "+"),
 			Self::Minus => write!(f, "-"),
@@ -115,6 +121,8 @@ impl fmt::Display for Token {
 			Self::Slash => write!(f, "/"),
 			Self::Ampersand => write!(f, "&"),
 			Self::Pipe => write!(f, "|"),
+			Self::Quote => write!(f, "'"),
+			Self::DoubleQuote => write!(f, "\""),
 			Self::LessThan => write!(f, "<"),
 			Self::LessThanOrEqual => write!(f, "<="),
 			Self::GreaterThan => write!(f, ">"),
