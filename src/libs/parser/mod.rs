@@ -135,9 +135,7 @@ impl Parser {
 				int_literal.into()
 			}
 			TokenType::Bang | TokenType::Minus => {
-				let token = self.get_current_token()?;
-				let token = token.clone();
-
+				let token = self.get_current_token()?.clone();
 				self.next_token();
 
 				let right = self.parse_expression(Precedence::Prefix)?;
@@ -168,7 +166,10 @@ impl Parser {
 			}
 			TokenType::If => self.parse_if_expression(),
 			TokenType::Function => self.parse_function_literal(),
-			other => bail!("No parsing fn exists for the `{:?}` token type", other),
+			other => bail!(
+				"No parsing function exists for the `{:?}` token type",
+				other
+			),
 		}
 	}
 
@@ -282,9 +283,11 @@ impl Parser {
 	}
 
 	fn parse_block_statement(&mut self) -> Result<Box<BlockStmt>> {
-		let token = self.get_current_token()?;
-		let token = token.clone();
+		if !self.expect_peek(TokenType::OpenCurlyBraces) {
+			bail!("Expected a `{{` token here")
+		}
 
+		let token = self.get_current_token()?.clone();
 		let mut block = BlockStmt {
 			token,
 			statements: vec![],
@@ -315,9 +318,6 @@ impl Parser {
 		if !self.expect_peek(TokenType::CloseParens) {
 			bail!("Expected a `)` token here")
 		}
-		if !self.expect_peek(TokenType::OpenCurlyBraces) {
-			bail!("Expected a `{{` token here")
-		}
 
 		let then = self.parse_block_statement()?;
 		let mut expr = IfExpr {
@@ -329,10 +329,6 @@ impl Parser {
 
 		if self.peek_token_is(TokenType::Else) {
 			self.next_token();
-			if !self.expect_peek(TokenType::OpenCurlyBraces) {
-				bail!("Expected a `{{` token here")
-			}
-
 			expr.alt = Some(self.parse_block_statement()?);
 		}
 
@@ -340,6 +336,13 @@ impl Parser {
 	}
 
 	fn parse_function_params(&mut self) -> Result<Vec<IdentifierExpr>> {
+		if !self.expect_peek(TokenType::OpenParens) {
+			bail!(
+				"Expected a `(` but got a `{}` instead",
+				self.get_peek_token()?
+			);
+		}
+
 		let mut idents: Vec<IdentifierExpr> = vec![];
 
 		if self.peek_token_is(TokenType::CloseParens) {
@@ -379,25 +382,9 @@ impl Parser {
 	}
 
 	fn parse_function_literal(&mut self) -> Result<Box<Expression>> {
-		let token = self.get_current_token()?;
-		let token = token.clone();
-
-		if !self.expect_peek(TokenType::OpenParens) {
-			bail!(
-				"Expected a `(` but got a `{}` instead",
-				self.get_peek_token()?
-			);
-		}
+		let token = self.get_current_token()?.clone();
 
 		let params = self.parse_function_params()?;
-
-		if !self.expect_peek(TokenType::CloseParens) {
-			bail!(
-				"Expected a `)` but got a `{}` instead",
-				self.get_peek_token()?
-			);
-		}
-
 		let body = self.parse_block_statement()?;
 		let fn_lit = FunctionLiteralExp {
 			token,
@@ -428,8 +415,7 @@ impl Parser {
 	}
 
 	fn parse_expression_statement(&mut self) -> Result<Box<Statement>> {
-		let token = self.get_current_token()?;
-		let token = token.clone();
+		let token = self.get_current_token()?.clone();
 
 		let mut expr_stmt = ExpressionStmt {
 			token,

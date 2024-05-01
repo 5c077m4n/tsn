@@ -67,7 +67,7 @@ fn let_parsing_errors() -> Result<()> {
 		r#"Unexpected token, recieved `Integer("5")` @ 2:12-3:1 instead of an `=` sign"#,
 		r#"Expected the next token to be `Identifier`, but got `Equal` @ 3:11-3:12 instead"#,
 		r#"Unexpected token, recieved `Equal` @ 3:11-3:12 instead of an identifier"#,
-		r#"No parsing fn exists for the `Equal` token type"#,
+		r#"No parsing function exists for the `Equal` token type"#,
 		r#"Expected the next token to be `Identifier`, but got `Integer("838383")` @ 4:12-5:3 instead"#,
 		r#"Unexpected token, recieved `Integer("838383")` @ 4:12-5:3 instead of an identifier"#,
 	];
