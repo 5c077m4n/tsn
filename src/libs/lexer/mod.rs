@@ -86,7 +86,7 @@ impl Lexer {
 			(b'-', _) => Some(Token::Minus),
 			(b'!', b'=') => {
 				self.read_char();
-				Some(Token::NEq)
+				Some(Token::NotEqual)
 			}
 			(b'!', _) => Some(Token::Bang),
 			(b'*', _) => Some(Token::Asterisk),

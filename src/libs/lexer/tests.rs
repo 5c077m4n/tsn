@@ -175,7 +175,7 @@ fn eq_neq_token_read() {
 		TokenData::new(Token::Integer("10".into()), 11, input.as_bytes()),
 		TokenData::new(Token::Semicolon, 13, input.as_bytes()),
 		TokenData::new(Token::Integer("10".into()), 19, input.as_bytes()),
-		TokenData::new(Token::NEq, 22, input.as_bytes()),
+		TokenData::new(Token::NotEqual, 22, input.as_bytes()),
 		TokenData::new(Token::Integer("9".into()), 25, input.as_bytes()),
 		TokenData::new(Token::Semicolon, 26, input.as_bytes()),
 	];

@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use super::token::Token;
 
+#[allow(dead_code)]
 trait Node: fmt::Display {
 	fn token_literal(&self) -> String;
 }

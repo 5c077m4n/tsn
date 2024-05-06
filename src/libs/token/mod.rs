@@ -60,7 +60,7 @@ pub enum Token {
 	/// `==`
 	DoubleEqual,
 	/// `!=`
-	NEq,
+	NotEqual,
 
 	/// ` `
 	Space,
@@ -137,7 +137,7 @@ impl fmt::Display for Token {
 			Self::OpenSquareBraces => write!(f, "["),
 			Self::CloseSquareBraces => write!(f, "]"),
 			Self::DoubleEqual => write!(f, "=="),
-			Self::NEq => write!(f, "!="),
+			Self::NotEqual => write!(f, "!="),
 			Self::Function => write!(f, "function"),
 			Self::Let => write!(f, "let"),
 			Self::Const => write!(f, "const"),

@@ -15,7 +15,7 @@ static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
 	TokenType::Slash,
 	TokenType::Asterisk,
 	TokenType::DoubleEqual,
-	TokenType::NEq,
+	TokenType::NotEqual,
 	TokenType::LessThan,
 	TokenType::GreaterThan,
 ];
@@ -40,7 +40,7 @@ enum Precedence {
 impl From<TokenType> for Precedence {
 	fn from(value: TokenType) -> Self {
 		match value {
-			TokenType::DoubleEqual | TokenType::NEq => Self::Equals,
+			TokenType::DoubleEqual | TokenType::NotEqual => Self::Equals,
 			TokenType::LessThan | TokenType::GreaterThan => Self::LessOrGreater,
 			TokenType::Plus | TokenType::Minus => Self::Sum,
 			TokenType::Asterisk | TokenType::Slash => Self::Product,
@@ -58,7 +58,7 @@ pub struct Parser {
 }
 impl Parser {
 	fn next_token(&mut self) {
-		self.token_current = self.token_peek.to_owned();
+		self.token_peek.clone_into(&mut self.token_current);
 		self.token_peek = self.lexer.next();
 	}
 
@@ -70,6 +70,7 @@ impl Parser {
 			token_peek: None,
 		};
 
+		// This is to make sure that both the `token_current` and `token_peek` are filled
 		p.next_token();
 		p.next_token();
 		p
@@ -98,9 +99,7 @@ impl Parser {
 	}
 
 	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
-		let token = self.get_current_token()?;
-		let token = token.clone();
-
+		let token = self.get_current_token()?.clone();
 		let precedence = self.current_precedence()?;
 		self.next_token();
 
