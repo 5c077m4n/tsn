@@ -253,7 +253,7 @@ impl fmt::Display for Statement {
 	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Program {
 	pub statements: Vec<Statement>,
 }

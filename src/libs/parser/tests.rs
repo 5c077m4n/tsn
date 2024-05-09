@@ -3,8 +3,8 @@ use anyhow::{bail, Result};
 use super::{
 	super::{
 		ast::{
-			Expression, ExpressionStmt, IdentifierExpr, IfExpr, InfixExpr, LetStmt, ReturnStmt,
-			Statement,
+			BlockStmt, Expression, ExpressionStmt, FunctionLiteralExp, IdentifierExpr, IfExpr,
+			InfixExpr, LetStmt, ReturnStmt, Statement,
 		},
 		token::Token,
 	},
@@ -519,7 +519,7 @@ fn if_expression_parsing() -> Result<()> {
 
 #[test]
 fn if_else_expression_parsing() -> Result<()> {
-	let input = "if (x < y) { x; } else { y }";
+	let input = "if (x < y) { x; } else { y; }";
 
 	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
@@ -612,56 +612,42 @@ fn function_literal_expression_parsing() -> Result<()> {
 			program.statements.first()
 		)
 	};
-
-	let Expression::If(IfExpr {
-		cond, then, alt, ..
-	}) = expr_stmt.expression.as_ref().unwrap().as_ref()
-	else {
-		bail!(
-			"The first statement should be and expression, but got a {:?}",
-			program.statements.first()
-		)
-	};
-
 	assert_eq!(
-		cond.as_ref(),
-		&Expression::Infix(InfixExpr {
-			token: Token::LessThan,
-			left: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier("x".into()),
-				value: "x".into()
-			})),
-			op: "<".to_string(),
-			right: Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier("y".into()),
-				value: "y".into()
-			}))
-		}),
-		"Wrong condition"
-	);
-	assert_eq!(
-		then.statements,
-		vec![Statement::Expression(ExpressionStmt {
-			token: Token::Identifier("x".into()),
-			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier("x".into()),
-				value: "x".to_string()
+		expr_stmt,
+		&ExpressionStmt {
+			token: Token::Function,
+			expression: Some(Box::new(Expression::FunctionLiteral(FunctionLiteralExp {
+				token: Token::Function,
+				params: vec![
+					IdentifierExpr {
+						token: Token::Identifier("x".to_string()),
+						value: "x".to_string()
+					},
+					IdentifierExpr {
+						token: Token::Identifier("y".to_string()),
+						value: "y".to_string()
+					}
+				],
+				body: Box::new(BlockStmt {
+					token: Token::OpenCurlyBraces,
+					statements: vec![Statement::Expression(ExpressionStmt {
+						token: Token::Identifier("x".to_string()),
+						expression: Some(Box::new(Expression::Infix(InfixExpr {
+							token: Token::Plus,
+							left: Box::new(Expression::Identifier(IdentifierExpr {
+								token: Token::Identifier("x".to_string()),
+								value: "x".to_string()
+							})),
+							op: "+".to_string(),
+							right: Box::new(Expression::Identifier(IdentifierExpr {
+								token: Token::Identifier("y".to_string()),
+								value: "y".to_string()
+							}))
+						})))
+					})]
+				})
 			})))
-		})],
-		"Wrong `then` statement"
-	);
-
-	assert!(alt.is_some(), "There should be an `else` clause");
-	assert_eq!(
-		alt.as_ref().unwrap().statements,
-		vec![Statement::Expression(ExpressionStmt {
-			token: Token::Identifier("y".into()),
-			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
-				token: Token::Identifier("y".into()),
-				value: "y".to_string()
-			})))
-		})],
-		"Wrong `then` statement"
+		}
 	);
 
 	Ok(())

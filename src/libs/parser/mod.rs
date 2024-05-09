@@ -181,10 +181,20 @@ impl Parser {
 			.as_ref()
 			.is_some_and(|token_data| TokenType::from(token_data.token()) == t)
 	}
+	fn current_token_is_not(&self, t: TokenType) -> bool {
+		self.token_current
+			.as_ref()
+			.is_some_and(|token_data| TokenType::from(token_data.token()) != t)
+	}
 	fn peek_token_is(&self, t: TokenType) -> bool {
 		self.token_peek
 			.as_ref()
 			.is_some_and(|token_data| TokenType::from(token_data.token()) == t)
+	}
+	fn peek_token_is_not(&self, t: TokenType) -> bool {
+		self.token_peek
+			.as_ref()
+			.is_some_and(|token_data| TokenType::from(token_data.token()) != t)
 	}
 
 	fn peek_error(&mut self, t: TokenType) {
@@ -255,7 +265,7 @@ impl Parser {
 		}
 
 		// TODO: remove this token skipping
-		while self.token_current.is_some() && !self.current_token_is(TokenType::Semicolon) {
+		while self.current_token_is_not(TokenType::Semicolon) {
 			self.next_token();
 		}
 
@@ -274,7 +284,7 @@ impl Parser {
 		self.next_token();
 
 		// TODO: remove this token skipping
-		while self.token_current.is_some() && !self.current_token_is(TokenType::Semicolon) {
+		while self.current_token_is_not(TokenType::Semicolon) {
 			self.next_token();
 		}
 
@@ -401,7 +411,7 @@ impl Parser {
 			if let Some(ref token_data) = self.token_current {
 				let token_type = TokenType::from(token_data.token());
 				!PREFIX_TOKEN_TYPES.contains(&token_type)
-					&& !self.peek_token_is(TokenType::Semicolon)
+					&& self.peek_token_is_not(TokenType::Semicolon)
 					&& self.peek_precedence()? > precedence
 			} else {
 				false
@@ -425,7 +435,7 @@ impl Parser {
 		expr_stmt.expression = Some(expr);
 
 		// TODO: remove this token skipping
-		while self.token_current.is_some() && !self.current_token_is(TokenType::Semicolon) {
+		while self.current_token_is_not(TokenType::Semicolon) {
 			self.next_token();
 		}
 
