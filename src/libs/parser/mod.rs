@@ -246,7 +246,7 @@ impl Parser {
 			token: current_token.clone(),
 			value: current_token.to_string(),
 		};
-		let let_stmt = LetStmt {
+		let mut let_stmt = LetStmt {
 			token,
 			name,
 			value: None,
@@ -264,11 +264,7 @@ impl Parser {
 			bail!(msg)
 		}
 
-		// TODO: remove this token skipping
-		while self.current_token_is_not(TokenType::Semicolon) {
-			self.next_token();
-		}
-
+		let_stmt.value = Some(self.parse_expression(Precedence::default())?);
 		let_stmt.into()
 	}
 
@@ -276,18 +272,13 @@ impl Parser {
 		let token = self.get_current_token()?;
 		let token = token.clone();
 
-		let ret_stmt = ReturnStmt {
+		let mut ret_stmt = ReturnStmt {
 			token,
 			return_value: None,
 		};
-
 		self.next_token();
 
-		// TODO: remove this token skipping
-		while self.current_token_is_not(TokenType::Semicolon) {
-			self.next_token();
-		}
-
+		ret_stmt.return_value = Some(self.parse_expression(Precedence::default())?);
 		ret_stmt.into()
 	}
 

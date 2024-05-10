@@ -4,7 +4,7 @@ use super::{
 	super::{
 		ast::{
 			BlockStmt, Expression, ExpressionStmt, FunctionLiteralExp, IdentifierExpr, IfExpr,
-			InfixExpr, LetStmt, ReturnStmt, Statement,
+			InfixExpr, IntegerExpr, LetStmt, ReturnStmt, Statement,
 		},
 		token::Token,
 	},
@@ -14,6 +14,7 @@ use super::{
 #[test]
 fn let_parsing() -> Result<()> {
 	let input = r#"
+    let a;
     let x = 5;
     let y = 10;
     let foobar = 838383;
@@ -23,22 +24,56 @@ fn let_parsing() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
-	assert!(parser.errors().is_empty());
-	assert_eq!(program.statements.len(), 3);
+	assert!(
+		parser.errors().is_empty(),
+		"Expected no errors but got: {:#?}",
+		parser.errors()
+	);
 
-	let expected_identifiers = &["x", "y", "foobar"];
-	for (index, &expected) in expected_identifiers.iter().enumerate() {
-		let stmt = program
-			.statements
-			.get(index)
-			.expect("Could not get the requested statement");
-
-		let Statement::Let(LetStmt { name, .. }) = stmt else {
-			bail!("This should have been a let statement, but got {:?}", stmt);
-		};
-		assert_eq!(name.value, expected);
-		assert_eq!(name.token.to_string(), expected);
-	}
+	let expected_stmts = vec![
+		Statement::Let(LetStmt {
+			token: Token::Let,
+			name: IdentifierExpr {
+				token: Token::Identifier("a".to_string()),
+				value: "a".to_string(),
+			},
+			value: None,
+		}),
+		Statement::Let(LetStmt {
+			token: Token::Let,
+			name: IdentifierExpr {
+				token: Token::Identifier("x".to_string()),
+				value: "x".to_string(),
+			},
+			value: Some(Box::new(Expression::Integer(IntegerExpr {
+				token: Token::Integer("5".to_string()),
+				value: 5,
+			}))),
+		}),
+		Statement::Let(LetStmt {
+			token: Token::Let,
+			name: IdentifierExpr {
+				token: Token::Identifier("y".to_string()),
+				value: "y".to_string(),
+			},
+			value: Some(Box::new(Expression::Integer(IntegerExpr {
+				token: Token::Integer("10".to_string()),
+				value: 10,
+			}))),
+		}),
+		Statement::Let(LetStmt {
+			token: Token::Let,
+			name: IdentifierExpr {
+				token: Token::Identifier("foobar".to_string()),
+				value: "foobar".to_string(),
+			},
+			value: Some(Box::new(Expression::Integer(IntegerExpr {
+				token: Token::Integer("838383".to_string()),
+				value: 838383,
+			}))),
+		}),
+	];
+	assert_eq!(program.statements, expected_stmts);
 
 	Ok(())
 }
@@ -88,27 +123,36 @@ fn return_parsing() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
-	assert!(parser.errors().is_empty());
-	assert_eq!(program.statements.len(), 3);
+	assert!(
+		parser.errors().is_empty(),
+		"Expected no errors, but got: {:#?}",
+		parser.errors()
+	);
 
 	let expected_stmts = &[
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
-			return_value: None,
+			return_value: Some(Box::new(Expression::Integer(IntegerExpr {
+				token: Token::Integer("5".to_string()),
+				value: 5,
+			}))),
 		}),
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
-			return_value: None,
+			return_value: Some(Box::new(Expression::Integer(IntegerExpr {
+				token: Token::Integer("10".to_string()),
+				value: 10,
+			}))),
 		}),
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
-			return_value: None,
+			return_value: Some(Box::new(Expression::Integer(IntegerExpr {
+				token: Token::Integer("993322".to_string()),
+				value: 993322,
+			}))),
 		}),
 	];
-	for (index, stmt) in program.statements.iter().enumerate() {
-		let expected = expected_stmts.get(index).unwrap();
-		assert_eq!(stmt, expected);
-	}
+	assert_eq!(program.statements, expected_stmts);
 
 	Ok(())
 }
