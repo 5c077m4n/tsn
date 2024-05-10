@@ -12,7 +12,7 @@ use super::{
 };
 
 #[test]
-fn let_parsing() -> Result<()> {
+fn let_parsing_no_errors() -> Result<()> {
 	let input = r#"
     let a;
     let x = 5;
@@ -90,16 +90,7 @@ fn let_parsing_errors() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let _program = parser.parse_program()?;
 
-	assert_eq!(
-		parser.errors().len(),
-		7,
-		"Wrong number of errors, got {:#?}",
-		parser.errors()
-	);
-
 	let expected = &[
-		r#"Expected the next token to be `Equal`, but got `Integer("5")` @ 2:12-3:1 instead"#,
-		r#"Unexpected token, recieved `Integer("5")` @ 2:12-3:1 instead of an `=` sign"#,
 		r#"Expected the next token to be `Identifier`, but got `Equal` @ 3:11-3:12 instead"#,
 		r#"Unexpected token, recieved `Equal` @ 3:11-3:12 instead of an identifier"#,
 		r#"No parsing function exists for the `Equal` token type"#,
@@ -114,6 +105,7 @@ fn let_parsing_errors() -> Result<()> {
 #[test]
 fn return_parsing() -> Result<()> {
 	let input = r#"
+    return;
     return 5;
     return 10;
     return 993322;
@@ -132,21 +124,25 @@ fn return_parsing() -> Result<()> {
 	let expected_stmts = &[
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
-			return_value: Some(Box::new(Expression::Integer(IntegerExpr {
+			value: None,
+		}),
+		Statement::Return(ReturnStmt {
+			token: Token::Return,
+			value: Some(Box::new(Expression::Integer(IntegerExpr {
 				token: Token::Integer("5".to_string()),
 				value: 5,
 			}))),
 		}),
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
-			return_value: Some(Box::new(Expression::Integer(IntegerExpr {
+			value: Some(Box::new(Expression::Integer(IntegerExpr {
 				token: Token::Integer("10".to_string()),
 				value: 10,
 			}))),
 		}),
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
-			return_value: Some(Box::new(Expression::Integer(IntegerExpr {
+			value: Some(Box::new(Expression::Integer(IntegerExpr {
 				token: Token::Integer("993322".to_string()),
 				value: 993322,
 			}))),

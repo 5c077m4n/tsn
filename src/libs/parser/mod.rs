@@ -236,8 +236,7 @@ impl Parser {
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
-		let token = self.get_current_token()?;
-		let token = token.clone();
+		let let_token = self.get_current_token()?.clone();
 
 		if !self.expect_peek(TokenType::Identifier) {
 			let msg = match &self.token_peek {
@@ -250,44 +249,46 @@ impl Parser {
 			};
 			bail!(msg)
 		}
-		let current_token = self.get_current_token()?;
+
+		let ident_token = self.get_current_token()?;
 		let name = IdentifierExpr {
-			token: current_token.clone(),
-			value: current_token.to_string(),
+			token: ident_token.clone(),
+			value: ident_token.to_string(),
 		};
 		let mut let_stmt = LetStmt {
-			token,
+			token: let_token,
 			name,
 			value: None,
 		};
 
-		if !self.expect_peek(TokenType::Equal) {
-			let msg = match &self.token_peek {
-				Some(token_data) => format!(
-					"Unexpected token, recieved `{:?}` @ {} instead of an `=` sign",
-					token_data.token(),
-					token_data.location()
-				),
-				None => "Expected an `=` sign here, but got nothing".to_string(),
-			};
-			bail!(msg)
+		self.next_token();
+		if self.current_token_is(TokenType::Equal) {
+			self.next_token();
+			let_stmt.value = Some(self.parse_expression(Precedence::default())?);
+		}
+		if self.peek_token_is(TokenType::Semicolon) {
+			self.next_token();
 		}
 
-		let_stmt.value = Some(self.parse_expression(Precedence::default())?);
 		let_stmt.into()
 	}
 
 	fn parse_return_statement(&mut self) -> Result<Box<Statement>> {
-		let token = self.get_current_token()?;
-		let token = token.clone();
+		let return_token = self.get_current_token()?.clone();
 
 		let mut ret_stmt = ReturnStmt {
-			token,
-			return_value: None,
+			token: return_token,
+			value: None,
 		};
 		self.next_token();
 
-		ret_stmt.return_value = Some(self.parse_expression(Precedence::default())?);
+		if self.current_token_is_not(TokenType::Semicolon) {
+			ret_stmt.value = Some(self.parse_expression(Precedence::default())?);
+		}
+		if self.peek_token_is(TokenType::Semicolon) {
+			self.next_token();
+		}
+
 		ret_stmt.into()
 	}
 
@@ -303,7 +304,7 @@ impl Parser {
 		};
 		self.next_token();
 
-		while self.token_current.is_some() && !self.current_token_is(TokenType::CloseCurlyBraces) {
+		while self.current_token_is_not(TokenType::CloseCurlyBraces) {
 			let stmt = self.parse_statement()?;
 			block.statements.push(*stmt);
 
