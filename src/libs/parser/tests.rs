@@ -1,12 +1,10 @@
 use anyhow::{bail, Result};
 
-use crate::libs::ast::StringExpr;
-
 use super::{
 	super::{
 		ast::{
-			BlockStmt, Expression, ExpressionStmt, FunctionLiteralExp, IdentifierExpr, IfExpr,
-			InfixExpr, IntegerExpr, LetStmt, ReturnStmt, Statement,
+			BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExp, IdentifierExpr,
+			IfExpr, InfixExpr, IntegerExpr, LetStmt, ReturnStmt, Statement, StringExpr,
 		},
 		token::Token,
 	},
@@ -17,6 +15,8 @@ use super::{
 fn let_parsing_no_errors() -> Result<()> {
 	let input = r#"
     let a;
+    let b = true;
+    let c = false;
     let x = 5;
     let y = 10;
     let foobar = 838383;
@@ -41,6 +41,28 @@ fn let_parsing_no_errors() -> Result<()> {
 				value: "a".to_string(),
 			},
 			value: None,
+		}),
+		Statement::Let(LetStmt {
+			token: Token::Let,
+			name: IdentifierExpr {
+				token: Token::Identifier("b".to_string()),
+				value: "b".to_string(),
+			},
+			value: Some(Box::new(Expression::Boolean(BooleanExpr {
+				token: Token::True,
+				value: true,
+			}))),
+		}),
+		Statement::Let(LetStmt {
+			token: Token::Let,
+			name: IdentifierExpr {
+				token: Token::Identifier("c".to_string()),
+				value: "c".to_string(),
+			},
+			value: Some(Box::new(Expression::Boolean(BooleanExpr {
+				token: Token::False,
+				value: false,
+			}))),
 		}),
 		Statement::Let(LetStmt {
 			token: Token::Let,
@@ -121,6 +143,8 @@ fn return_parsing() -> Result<()> {
 	let input = r#"
     return;
     return "abc";
+    return true;
+    return false;
     return 5;
     return 10;
     return 993322;
@@ -146,6 +170,20 @@ fn return_parsing() -> Result<()> {
 			value: Some(Box::new(Expression::String(StringExpr {
 				token: Token::String(r#""abc""#.to_string()),
 				value: r#""abc""#.to_string(),
+			}))),
+		}),
+		Statement::Return(ReturnStmt {
+			token: Token::Return,
+			value: Some(Box::new(Expression::Boolean(BooleanExpr {
+				token: Token::True,
+				value: true,
+			}))),
+		}),
+		Statement::Return(ReturnStmt {
+			token: Token::Return,
+			value: Some(Box::new(Expression::Boolean(BooleanExpr {
+				token: Token::False,
+				value: false,
 			}))),
 		}),
 		Statement::Return(ReturnStmt {

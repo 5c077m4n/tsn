@@ -67,7 +67,7 @@ impl From<InfixExpr> for Result<Box<Expression>> {
 }
 #[derive(Debug, PartialEq, Eq)]
 pub struct BooleanExpr {
-	/// `Token::Bang` or `Token::Minus`
+	/// `Token::True` or `Token::False`
 	pub token: Token,
 	pub value: bool,
 }
