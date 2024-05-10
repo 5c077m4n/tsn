@@ -1,5 +1,7 @@
 use anyhow::{bail, Result};
 
+use crate::libs::ast::StringExpr;
+
 use super::{
 	super::{
 		ast::{
@@ -18,6 +20,7 @@ fn let_parsing_no_errors() -> Result<()> {
     let x = 5;
     let y = 10;
     let foobar = 838383;
+    let foo = "bar";
     "#;
 
 	let lexer = Lexer::new(input);
@@ -72,6 +75,17 @@ fn let_parsing_no_errors() -> Result<()> {
 				value: 838383,
 			}))),
 		}),
+		Statement::Let(LetStmt {
+			token: Token::Let,
+			name: IdentifierExpr {
+				token: Token::Identifier("foo".to_string()),
+				value: "foo".to_string(),
+			},
+			value: Some(Box::new(Expression::String(StringExpr {
+				token: Token::String(r#""bar""#.to_string()),
+				value: r#""bar""#.to_string(),
+			}))),
+		}),
 	];
 	assert_eq!(program.statements, expected_stmts);
 
@@ -106,6 +120,7 @@ fn let_parsing_errors() -> Result<()> {
 fn return_parsing() -> Result<()> {
 	let input = r#"
     return;
+    return "abc";
     return 5;
     return 10;
     return 993322;
@@ -125,6 +140,13 @@ fn return_parsing() -> Result<()> {
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
 			value: None,
+		}),
+		Statement::Return(ReturnStmt {
+			token: Token::Return,
+			value: Some(Box::new(Expression::String(StringExpr {
+				token: Token::String(r#""abc""#.to_string()),
+				value: r#""abc""#.to_string(),
+			}))),
 		}),
 		Statement::Return(ReturnStmt {
 			token: Token::Return,
