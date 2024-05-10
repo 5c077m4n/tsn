@@ -4,6 +4,7 @@ use super::{
 	ast::{
 		BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExp, IdentifierExpr,
 		IfExpr, InfixExpr, IntegerExpr, LetStmt, PrefixExpr, Program, ReturnStmt, Statement,
+		StringExpr,
 	},
 	lexer::Lexer,
 	token::{Token, TokenData, TokenType},
@@ -117,6 +118,13 @@ impl Parser {
 		let token = self.get_current_token()?;
 
 		match TokenType::from(token) {
+			TokenType::True | TokenType::False => {
+				let bool_expr = BooleanExpr {
+					token: token.clone(),
+					value: self.current_token_is(TokenType::True),
+				};
+				bool_expr.into()
+			}
 			TokenType::Identifier => {
 				let token = token.clone();
 
@@ -133,6 +141,14 @@ impl Parser {
 
 				int_literal.into()
 			}
+			TokenType::String => {
+				let token = token.clone();
+
+				let value = token.to_string();
+				let str_literal = StringExpr { token, value };
+
+				str_literal.into()
+			}
 			TokenType::Bang | TokenType::Minus => {
 				let token = self.get_current_token()?.clone();
 				self.next_token();
@@ -145,13 +161,6 @@ impl Parser {
 				};
 
 				prefix_expr.into()
-			}
-			TokenType::True | TokenType::False => {
-				let bool_expr = BooleanExpr {
-					token: token.clone(),
-					value: self.current_token_is(TokenType::True),
-				};
-				bool_expr.into()
 			}
 			TokenType::OpenParens => {
 				self.next_token();

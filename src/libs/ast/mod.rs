@@ -31,6 +31,16 @@ impl From<IntegerExpr> for Result<Box<Expression>> {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct StringExpr {
+	pub token: Token,
+	pub value: String,
+}
+impl From<StringExpr> for Result<Box<Expression>> {
+	fn from(val: StringExpr) -> Self {
+		Ok(Box::new(Expression::String(val)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
 pub struct PrefixExpr {
 	/// `Token::Bang` or `Token::Minus`
 	pub token: Token,
@@ -95,6 +105,7 @@ impl From<FunctionLiteralExp> for Result<Box<Expression>> {
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
+	String(StringExpr),
 	Prefix(PrefixExpr),
 	Infix(InfixExpr),
 	Boolean(BooleanExpr),
@@ -106,6 +117,7 @@ impl Node for Expression {
 		match self {
 			Self::Identifier(IdentifierExpr { token, .. }) => token.to_string(),
 			Self::Integer(IntegerExpr { token, .. }) => token.to_string(),
+			Expression::String(StringExpr { token, .. }) => token.to_string(),
 			Self::Prefix(PrefixExpr { token, .. }) => token.to_string(),
 			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
 			Self::Boolean(BooleanExpr { token, .. }) => token.to_string(),
@@ -119,6 +131,7 @@ impl fmt::Display for Expression {
 		match self {
 			Self::Identifier(IdentifierExpr { value, .. }) => write!(f, "{}", value),
 			Self::Integer(IntegerExpr { value, .. }) => write!(f, "{}", value),
+			Self::String(StringExpr { value, .. }) => write!(f, "{}", value),
 			Self::Prefix(PrefixExpr { op, right, .. }) => {
 				write!(f, "({}{})", op, right)
 			}
@@ -168,7 +181,7 @@ impl From<LetStmt> for Result<Box<Statement>> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ReturnStmt {
 	pub token: Token,
-	pub return_value: Option<Box<Expression>>,
+	pub value: Option<Box<Expression>>,
 }
 impl From<ReturnStmt> for Result<Box<Statement>> {
 	fn from(val: ReturnStmt) -> Self {
@@ -233,7 +246,7 @@ impl fmt::Display for Statement {
 			}
 			Statement::Return(ReturnStmt {
 				token,
-				return_value,
+				value: return_value,
 			}) => {
 				write!(f, "{} ", token)?;
 				if let Some(ret_val) = return_value {
