@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 
 use anyhow::Result;
@@ -90,15 +91,37 @@ impl From<IfExpr> for Result<Box<Expression>> {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
-pub struct FunctionLiteralExp {
+pub struct FunctionLiteralExpr {
 	/// `Token::Function`
 	pub token: Token,
 	pub params: Vec<IdentifierExpr>,
 	pub body: Box<BlockStmt>,
 }
-impl From<FunctionLiteralExp> for Result<Box<Expression>> {
-	fn from(val: FunctionLiteralExp) -> Self {
+impl From<FunctionLiteralExpr> for Result<Box<Expression>> {
+	fn from(val: FunctionLiteralExpr) -> Self {
 		Ok(Box::new(Expression::FunctionLiteral(val)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
+pub struct ArrayLiteralExpr {
+	/// `Token::OpenSquareBraces`
+	pub token: Token,
+	pub elements: Vec<Expression>,
+}
+impl From<ArrayLiteralExpr> for Result<Box<Expression>> {
+	fn from(val: ArrayLiteralExpr) -> Self {
+		Ok(Box::new(Expression::ArrayLiteral(val)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
+pub struct ObjectLiteralExpr {
+	/// `Token::OpenCurlyBraces`
+	pub token: Token,
+	pub pairs: HashMap<String, Expression>,
+}
+impl From<ObjectLiteralExpr> for Result<Box<Expression>> {
+	fn from(val: ObjectLiteralExpr) -> Self {
+		Ok(Box::new(Expression::ObjectLiteral(val)))
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
@@ -110,7 +133,9 @@ pub enum Expression {
 	Infix(InfixExpr),
 	Boolean(BooleanExpr),
 	If(IfExpr),
-	FunctionLiteral(FunctionLiteralExp),
+	FunctionLiteral(FunctionLiteralExpr),
+	ArrayLiteral(ArrayLiteralExpr),
+	ObjectLiteral(ObjectLiteralExpr),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
@@ -122,7 +147,9 @@ impl Node for Expression {
 			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
 			Self::Boolean(BooleanExpr { token, .. }) => token.to_string(),
 			Self::If(IfExpr { token, .. }) => token.to_string(),
-			Self::FunctionLiteral(FunctionLiteralExp { token, .. }) => token.to_string(),
+			Self::FunctionLiteral(FunctionLiteralExpr { token, .. }) => token.to_string(),
+			Self::ArrayLiteral(ArrayLiteralExpr { token, .. }) => token.to_string(),
+			Self::ObjectLiteral(ObjectLiteralExpr { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -150,7 +177,7 @@ impl fmt::Display for Expression {
 				}
 				Ok(())
 			}
-			Self::FunctionLiteral(FunctionLiteralExp {
+			Self::FunctionLiteral(FunctionLiteralExpr {
 				token,
 				params,
 				body,
@@ -161,6 +188,20 @@ impl fmt::Display for Expression {
 					.collect::<Vec<String>>()
 					.join(", ");
 				write!(f, "{} ({}) {}", token, params, body)
+			}
+			Self::ArrayLiteral(ArrayLiteralExpr { token: _, elements }) => {
+				write!(f, "[")?;
+				for el in elements {
+					write!(f, "{}, ", el)?;
+				}
+				write!(f, "]")
+			}
+			Self::ObjectLiteral(ObjectLiteralExpr { token: _, pairs }) => {
+				write!(f, "{{ ")?;
+				for (key, value) in pairs {
+					write!(f, "{}: {}, ", key, value)?;
+				}
+				write!(f, " }}")
 			}
 		}
 	}

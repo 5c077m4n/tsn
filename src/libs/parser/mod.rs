@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 
 use super::{
 	ast::{
-		BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExp, IdentifierExpr,
+		BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr, IdentifierExpr,
 		IfExpr, InfixExpr, IntegerExpr, LetStmt, PrefixExpr, Program, ReturnStmt, Statement,
 		StringExpr,
 	},
@@ -360,7 +360,7 @@ impl Parser {
 
 		let params = self.parse_function_params()?;
 		let body = self.parse_block_statement()?;
-		let fn_lit = FunctionLiteralExp {
+		let fn_lit = FunctionLiteralExpr {
 			token,
 			params,
 			body,

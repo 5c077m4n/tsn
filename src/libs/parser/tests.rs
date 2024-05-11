@@ -3,7 +3,7 @@ use anyhow::{bail, Result};
 use super::{
 	super::{
 		ast::{
-			BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExp, IdentifierExpr,
+			BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr, IdentifierExpr,
 			IfExpr, InfixExpr, IntegerExpr, LetStmt, ReturnStmt, Statement, StringExpr,
 		},
 		token::Token,
@@ -714,7 +714,7 @@ fn function_literal_expression_parsing() -> Result<()> {
 		expr_stmt,
 		&ExpressionStmt {
 			token: Token::Function,
-			expression: Some(Box::new(Expression::FunctionLiteral(FunctionLiteralExp {
+			expression: Some(Box::new(Expression::FunctionLiteral(FunctionLiteralExpr {
 				token: Token::Function,
 				params: vec![
 					IdentifierExpr {
