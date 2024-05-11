@@ -77,30 +77,30 @@ impl Parser {
 		p
 	}
 
-	fn get_current_token(&self) -> Result<&Token> {
+	fn get_current_token_data(&self) -> Result<&TokenData> {
 		let Some(token_data) = self.token_current.as_ref() else {
 			bail!("The current token is empty");
 		};
-		Ok(token_data.token())
+		Ok(token_data)
 	}
-	fn get_peek_token(&self) -> Result<&Token> {
+	fn get_peek_token_data(&self) -> Result<&TokenData> {
 		let Some(token_data) = self.token_peek.as_ref() else {
 			bail!("The peek token is empty");
 		};
-		Ok(token_data.token())
+		Ok(token_data)
 	}
 
 	fn current_precedence(&self) -> Result<Precedence> {
-		let token = self.get_current_token()?;
+		let token = self.get_current_token_data()?.token();
 		Ok(Precedence::from(TokenType::from(token)))
 	}
 	fn peek_precedence(&self) -> Result<Precedence> {
-		let token = self.get_peek_token()?;
+		let token = self.get_peek_token_data()?.token();
 		Ok(Precedence::from(TokenType::from(token)))
 	}
 
 	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
-		let token = self.get_current_token()?.clone();
+		let token = self.get_current_token_data()?.token().clone();
 		let precedence = self.current_precedence()?;
 		self.next_token();
 
@@ -115,7 +115,8 @@ impl Parser {
 		infix_expr.into()
 	}
 	fn prefix_parse(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
-		let token = self.get_current_token()?;
+		let token_data = self.get_current_token_data()?;
+		let token = token_data.token();
 
 		match TokenType::from(token) {
 			TokenType::True | TokenType::False => {
@@ -150,7 +151,7 @@ impl Parser {
 				str_literal.into()
 			}
 			TokenType::Bang | TokenType::Minus => {
-				let token = self.get_current_token()?.clone();
+				let token = self.get_current_token_data()?.token().clone();
 				self.next_token();
 
 				let right = self.parse_expression(Precedence::Prefix)?;
@@ -173,8 +174,9 @@ impl Parser {
 			TokenType::If => self.parse_if_expression(),
 			TokenType::Function => self.parse_function_literal(),
 			other => bail!(
-				"No parsing function exists for the `{:?}` token type",
-				other
+				"No parsing function exists for the `{:?}` token type @ {}",
+				other,
+				token_data.location()
 			),
 		}
 	}
@@ -226,11 +228,11 @@ impl Parser {
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
-		let let_token = self.get_current_token()?.clone();
+		let let_token = self.get_current_token_data()?.token().clone();
 
 		self.assert_peek(TokenType::Identifier)?;
 
-		let ident_token = self.get_current_token()?;
+		let ident_token = self.get_current_token_data()?.token();
 		let name = IdentifierExpr {
 			token: ident_token.clone(),
 			value: ident_token.to_string(),
@@ -254,7 +256,7 @@ impl Parser {
 	}
 
 	fn parse_return_statement(&mut self) -> Result<Box<Statement>> {
-		let return_token = self.get_current_token()?.clone();
+		let return_token = self.get_current_token_data()?.token().clone();
 
 		let mut ret_stmt = ReturnStmt {
 			token: return_token,
@@ -275,7 +277,7 @@ impl Parser {
 	fn parse_block_statement(&mut self) -> Result<Box<BlockStmt>> {
 		self.assert_peek(TokenType::OpenCurlyBraces)?;
 
-		let token = self.get_current_token()?.clone();
+		let token = self.get_current_token_data()?.token().clone();
 		let mut block = BlockStmt {
 			token,
 			statements: vec![],
@@ -293,14 +295,12 @@ impl Parser {
 	}
 
 	fn parse_if_expression(&mut self) -> Result<Box<Expression>> {
-		let token = self.get_current_token()?;
-		let token = token.clone();
+		let token = self.get_current_token_data()?.token().clone();
 
 		self.assert_peek(TokenType::OpenParens)?;
-
 		self.next_token();
-		let cond = self.parse_expression(Precedence::default())?;
 
+		let cond = self.parse_expression(Precedence::default())?;
 		self.assert_peek(TokenType::CloseParens)?;
 
 		let then = self.parse_block_statement()?;
@@ -331,7 +331,7 @@ impl Parser {
 
 		self.next_token();
 
-		let token = self.get_current_token()?;
+		let token = self.get_current_token_data()?.token();
 		let ident = IdentifierExpr {
 			token: token.clone(),
 			value: token.clone().to_string(),
@@ -342,7 +342,7 @@ impl Parser {
 			self.next_token();
 			self.next_token();
 
-			let token = self.get_current_token()?;
+			let token = self.get_current_token_data()?.token();
 			let ident = IdentifierExpr {
 				token: token.clone(),
 				value: token.clone().to_string(),
@@ -356,7 +356,7 @@ impl Parser {
 	}
 
 	fn parse_function_literal(&mut self) -> Result<Box<Expression>> {
-		let token = self.get_current_token()?.clone();
+		let token = self.get_current_token_data()?.token().clone();
 
 		let params = self.parse_function_params()?;
 		let body = self.parse_block_statement()?;
@@ -389,7 +389,7 @@ impl Parser {
 	}
 
 	fn parse_expression_statement(&mut self) -> Result<Box<Statement>> {
-		let token = self.get_current_token()?.clone();
+		let token = self.get_current_token_data()?.token().clone();
 
 		let mut expr_stmt = ExpressionStmt {
 			token,

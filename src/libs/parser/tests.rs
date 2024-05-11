@@ -128,7 +128,7 @@ fn let_parsing_errors() -> Result<()> {
 
 	let expected = &[
 		r#"Expected the next token to be `Identifier`, but got `Equal` @ 3:11-3:12 instead"#,
-		r#"No parsing function exists for the `Equal` token type"#,
+		r#"No parsing function exists for the `Equal` token type @ 3:11-3:12"#,
 		r#"Expected the next token to be `Identifier`, but got `Integer("838383")` @ 4:12-5:3 instead"#,
 	];
 	assert_eq!(parser.errors(), expected);
