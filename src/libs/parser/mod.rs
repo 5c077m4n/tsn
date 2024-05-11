@@ -2,9 +2,9 @@ use anyhow::{bail, Result};
 
 use super::{
 	ast::{
-		BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr, IdentifierExpr,
-		IfExpr, InfixExpr, IntegerExpr, LetStmt, PrefixExpr, Program, ReturnStmt, Statement,
-		StringExpr,
+		ArrayLiteralExpr, BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr,
+		IdentifierExpr, IfExpr, InfixExpr, IntegerExpr, LetStmt, PrefixExpr, Program, ReturnStmt,
+		Statement, StringExpr,
 	},
 	lexer::Lexer,
 	token::{Token, TokenData, TokenType},
@@ -114,6 +114,111 @@ impl Parser {
 
 		infix_expr.into()
 	}
+
+	fn parse_if_expression(&mut self) -> Result<Box<Expression>> {
+		let token = self.get_current_token_data()?.token().clone();
+
+		self.assert_peek(TokenType::OpenParens)?;
+		self.next_token();
+
+		let cond = self.parse_expression(Precedence::default())?;
+		self.assert_peek(TokenType::CloseParens)?;
+
+		let then = self.parse_block_statement()?;
+		let mut expr = IfExpr {
+			token,
+			cond,
+			then,
+			alt: None,
+		};
+
+		if self.peek_token_is(TokenType::Else) {
+			self.next_token();
+			expr.alt = Some(self.parse_block_statement()?);
+		}
+
+		expr.into()
+	}
+
+	fn parse_function_params(&mut self) -> Result<Vec<IdentifierExpr>> {
+		self.assert_peek(TokenType::OpenParens)?;
+
+		let mut idents: Vec<IdentifierExpr> = vec![];
+
+		if self.peek_token_is(TokenType::CloseParens) {
+			self.next_token();
+			return Ok(idents);
+		}
+
+		self.next_token();
+
+		let token = self.get_current_token_data()?.token();
+		let ident = IdentifierExpr {
+			token: token.clone(),
+			value: token.clone().to_string(),
+		};
+		idents.push(ident);
+
+		while self.peek_token_is(TokenType::Comma) {
+			self.next_token();
+			self.next_token();
+
+			let token = self.get_current_token_data()?.token();
+			let ident = IdentifierExpr {
+				token: token.clone(),
+				value: token.clone().to_string(),
+			};
+			idents.push(ident);
+		}
+
+		self.assert_peek(TokenType::CloseParens)?;
+
+		Ok(idents)
+	}
+
+	fn parse_function_literal(&mut self) -> Result<Box<Expression>> {
+		let token = self.get_current_token_data()?.token().clone();
+
+		let params = self.parse_function_params()?;
+		let body = self.parse_block_statement()?;
+		let fn_lit = FunctionLiteralExpr {
+			token,
+			params,
+			body,
+		};
+
+		fn_lit.into()
+	}
+
+	fn parse_expression_list(&mut self, closing_token: TokenType) -> Result<Vec<Expression>> {
+		let mut exprs: Vec<Expression> = vec![];
+
+		if self.peek_token_is(closing_token) {
+			return Ok(exprs);
+		}
+		self.next_token();
+
+		exprs.push(*self.parse_expression(Precedence::default())?);
+
+		while self.peek_token_is(TokenType::Comma) {
+			self.next_token();
+			self.next_token();
+			exprs.push(*self.parse_expression(Precedence::default())?);
+		}
+		self.assert_peek(closing_token)?;
+
+		Ok(exprs)
+	}
+	fn parse_array_literal(&mut self) -> Result<Box<Expression>> {
+		let token = self.get_current_token_data()?.token().clone();
+		let array = ArrayLiteralExpr {
+			token,
+			elements: self.parse_expression_list(TokenType::CloseSquareBraces)?,
+		};
+
+		array.into()
+	}
+
 	fn prefix_parse(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
 		let token_data = self.get_current_token_data()?;
 		let token = token_data.token();
@@ -173,6 +278,8 @@ impl Parser {
 			}
 			TokenType::If => self.parse_if_expression(),
 			TokenType::Function => self.parse_function_literal(),
+			TokenType::OpenSquareBraces => self.parse_array_literal(),
+			TokenType::OpenCurlyBraces => todo!("Object parser"),
 			other => bail!(
 				"No parsing function exists for the `{:?}` token type @ {}",
 				other,
@@ -292,81 +399,6 @@ impl Parser {
 		}
 
 		Ok(Box::new(block))
-	}
-
-	fn parse_if_expression(&mut self) -> Result<Box<Expression>> {
-		let token = self.get_current_token_data()?.token().clone();
-
-		self.assert_peek(TokenType::OpenParens)?;
-		self.next_token();
-
-		let cond = self.parse_expression(Precedence::default())?;
-		self.assert_peek(TokenType::CloseParens)?;
-
-		let then = self.parse_block_statement()?;
-		let mut expr = IfExpr {
-			token,
-			cond,
-			then,
-			alt: None,
-		};
-
-		if self.peek_token_is(TokenType::Else) {
-			self.next_token();
-			expr.alt = Some(self.parse_block_statement()?);
-		}
-
-		expr.into()
-	}
-
-	fn parse_function_params(&mut self) -> Result<Vec<IdentifierExpr>> {
-		self.assert_peek(TokenType::OpenParens)?;
-
-		let mut idents: Vec<IdentifierExpr> = vec![];
-
-		if self.peek_token_is(TokenType::CloseParens) {
-			self.next_token();
-			return Ok(idents);
-		}
-
-		self.next_token();
-
-		let token = self.get_current_token_data()?.token();
-		let ident = IdentifierExpr {
-			token: token.clone(),
-			value: token.clone().to_string(),
-		};
-		idents.push(ident);
-
-		while self.peek_token_is(TokenType::Comma) {
-			self.next_token();
-			self.next_token();
-
-			let token = self.get_current_token_data()?.token();
-			let ident = IdentifierExpr {
-				token: token.clone(),
-				value: token.clone().to_string(),
-			};
-			idents.push(ident);
-		}
-
-		self.assert_peek(TokenType::CloseParens)?;
-
-		Ok(idents)
-	}
-
-	fn parse_function_literal(&mut self) -> Result<Box<Expression>> {
-		let token = self.get_current_token_data()?.token().clone();
-
-		let params = self.parse_function_params()?;
-		let body = self.parse_block_statement()?;
-		let fn_lit = FunctionLiteralExpr {
-			token,
-			params,
-			body,
-		};
-
-		fn_lit.into()
 	}
 
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Box<Expression>> {

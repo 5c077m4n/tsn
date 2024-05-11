@@ -3,8 +3,9 @@ use anyhow::{bail, Result};
 use super::{
 	super::{
 		ast::{
-			BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr, IdentifierExpr,
-			IfExpr, InfixExpr, IntegerExpr, LetStmt, ReturnStmt, Statement, StringExpr,
+			ArrayLiteralExpr, BlockStmt, BooleanExpr, Expression, ExpressionStmt,
+			FunctionLiteralExpr, IdentifierExpr, IfExpr, InfixExpr, IntegerExpr, LetStmt,
+			ReturnStmt, Statement, StringExpr,
 		},
 		token::Token,
 	},
@@ -684,7 +685,7 @@ fn if_else_expression_parsing() -> Result<()> {
 				value: "y".to_string()
 			})))
 		})],
-		"Wrong `then` statement"
+		"Wrong `else` statement"
 	);
 
 	Ok(())
@@ -704,15 +705,9 @@ fn function_literal_expression_parsing() -> Result<()> {
 		parser.errors()
 	);
 
-	let Statement::Expression(expr_stmt) = program.statements.first().unwrap() else {
-		bail!(
-			"The first statement should be and expression, but got a {:?}",
-			program.statements.first()
-		)
-	};
 	assert_eq!(
-		expr_stmt,
-		&ExpressionStmt {
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
 			token: Token::Function,
 			expression: Some(Box::new(Expression::FunctionLiteral(FunctionLiteralExpr {
 				token: Token::Function,
@@ -745,7 +740,83 @@ fn function_literal_expression_parsing() -> Result<()> {
 					})]
 				})
 			})))
-		}
+		})]
+	);
+
+	Ok(())
+}
+
+#[test]
+fn empty_array_literal_expression_parsing() -> Result<()> {
+	let input = "[]";
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	assert_eq!(
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::OpenSquareBraces,
+			expression: Some(Box::new(Expression::ArrayLiteral(ArrayLiteralExpr {
+				token: Token::OpenSquareBraces,
+				elements: vec![]
+			})))
+		})]
+	);
+
+	Ok(())
+}
+#[test]
+fn array_literal_expression_parsing() -> Result<()> {
+	let input = r#"[1, 2, 3, "some string", true]"#;
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	assert_eq!(
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::OpenSquareBraces,
+			expression: Some(Box::new(Expression::ArrayLiteral(ArrayLiteralExpr {
+				token: Token::OpenSquareBraces,
+				elements: vec![
+					Expression::Integer(IntegerExpr {
+						token: Token::Integer("1".to_string()),
+						value: 1
+					}),
+					Expression::Integer(IntegerExpr {
+						token: Token::Integer("2".to_string()),
+						value: 2
+					}),
+					Expression::Integer(IntegerExpr {
+						token: Token::Integer("3".to_string()),
+						value: 3
+					}),
+					Expression::String(StringExpr {
+						token: Token::String("\"some string\"".to_string()),
+						value: "\"some string\"".to_string(),
+					}),
+					Expression::Boolean(BooleanExpr {
+						token: Token::True,
+						value: true,
+					})
+				]
+			})))
+		})]
 	);
 
 	Ok(())
