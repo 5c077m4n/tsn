@@ -166,9 +166,7 @@ impl Parser {
 				self.next_token();
 				let expr = self.parse_expression(Precedence::default());
 
-				if !self.expect_peek(TokenType::CloseParens) {
-					bail!("Exected a `)` here but got a `{}`", self.get_peek_token()?)
-				}
+				self.assert_peek(TokenType::CloseParens)?;
 
 				expr
 			}
@@ -206,49 +204,31 @@ impl Parser {
 			.is_some_and(|token_data| TokenType::from(token_data.token()) != t)
 	}
 
-	fn peek_error(&mut self, t: TokenType) {
-		let msg = match &self.token_peek {
-			Some(token_data) => {
-				format!(
+	fn assert_peek(&mut self, t: TokenType) -> Result<()> {
+		if let Some(token_data) = &self.token_peek {
+			if TokenType::from(token_data.token()) != t {
+				bail!(
 					"Expected the next token to be `{:?}`, but got `{:?}` @ {} instead",
 					t,
 					token_data.token(),
 					token_data.location()
-				)
+				);
+			} else {
+				self.next_token();
+				Ok(())
 			}
-			None => {
-				format!(
-					"Expected the next token to be `{:?}`, but got nothing instead",
-					t
-				)
-			}
-		};
-		self.errors.push(msg);
-	}
-	fn expect_peek(&mut self, t: TokenType) -> bool {
-		let is_expeted_token = self.peek_token_is(t);
-		if is_expeted_token {
-			self.next_token();
 		} else {
-			self.peek_error(t);
+			bail!(
+				"Expected the next token to be `{:?}`, but got nothing instead",
+				t
+			)
 		}
-		is_expeted_token
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
 		let let_token = self.get_current_token()?.clone();
 
-		if !self.expect_peek(TokenType::Identifier) {
-			let msg = match &self.token_peek {
-				Some(token_data) => format!(
-					"Unexpected token, recieved `{:?}` @ {} instead of an identifier",
-					token_data.token(),
-					token_data.location()
-				),
-				None => "Expected an identifier here, but got nothing".to_string(),
-			};
-			bail!(msg)
-		}
+		self.assert_peek(TokenType::Identifier)?;
 
 		let ident_token = self.get_current_token()?;
 		let name = IdentifierExpr {
@@ -293,9 +273,7 @@ impl Parser {
 	}
 
 	fn parse_block_statement(&mut self) -> Result<Box<BlockStmt>> {
-		if !self.expect_peek(TokenType::OpenCurlyBraces) {
-			bail!("Expected a `{{` token here")
-		}
+		self.assert_peek(TokenType::OpenCurlyBraces)?;
 
 		let token = self.get_current_token()?.clone();
 		let mut block = BlockStmt {
@@ -318,16 +296,12 @@ impl Parser {
 		let token = self.get_current_token()?;
 		let token = token.clone();
 
-		if !self.expect_peek(TokenType::OpenParens) {
-			bail!("Expected a `(` token here")
-		}
+		self.assert_peek(TokenType::OpenParens)?;
 
 		self.next_token();
 		let cond = self.parse_expression(Precedence::default())?;
 
-		if !self.expect_peek(TokenType::CloseParens) {
-			bail!("Expected a `)` token here")
-		}
+		self.assert_peek(TokenType::CloseParens)?;
 
 		let then = self.parse_block_statement()?;
 		let mut expr = IfExpr {
@@ -346,12 +320,7 @@ impl Parser {
 	}
 
 	fn parse_function_params(&mut self) -> Result<Vec<IdentifierExpr>> {
-		if !self.expect_peek(TokenType::OpenParens) {
-			bail!(
-				"Expected a `(` but got a `{}` instead",
-				self.get_peek_token()?
-			);
-		}
+		self.assert_peek(TokenType::OpenParens)?;
 
 		let mut idents: Vec<IdentifierExpr> = vec![];
 
@@ -381,12 +350,7 @@ impl Parser {
 			idents.push(ident);
 		}
 
-		if !self.expect_peek(TokenType::CloseParens) {
-			bail!(
-				"Expected a `)` token, but got `{}` instead",
-				self.get_current_token()?
-			)
-		}
+		self.assert_peek(TokenType::CloseParens)?;
 
 		Ok(idents)
 	}
