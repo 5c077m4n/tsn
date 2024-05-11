@@ -289,7 +289,7 @@ impl Parser {
 	}
 
 	pub fn errors(&self) -> &[String] {
-		&self.errors[..]
+		&self.errors
 	}
 
 	fn current_token_is(&self, t: TokenType) -> bool {
