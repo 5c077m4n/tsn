@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use anyhow::{bail, Result};
 
 use super::{
 	ast::{
 		ArrayLiteralExpr, BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr,
-		IdentifierExpr, IfExpr, InfixExpr, IntegerExpr, LetStmt, PrefixExpr, Program, ReturnStmt,
-		Statement, StringExpr,
+		IdentifierExpr, IfExpr, InfixExpr, IntegerExpr, LetStmt, ObjectLiteralExpr, PrefixExpr,
+		Program, ReturnStmt, Statement, StringExpr,
 	},
 	lexer::Lexer,
 	token::{Token, TokenData, TokenType},
@@ -219,6 +221,33 @@ impl Parser {
 		array.into()
 	}
 
+	fn parse_object_literal(&mut self) -> Result<Box<Expression>> {
+		let token = self.get_current_token_data()?.token().clone();
+		let mut object = ObjectLiteralExpr {
+			token,
+			pairs: HashMap::new(),
+		};
+
+		while self.peek_token_is_not(TokenType::CloseCurlyBraces) {
+			self.next_token();
+
+			let key = self.parse_expression(Precedence::default())?;
+			self.assert_peek(TokenType::Colon)?;
+
+			self.next_token();
+			let value = self.parse_expression(Precedence::default())?;
+
+			object.pairs.insert(key.to_string(), *value);
+
+			if self.peek_token_is_not(TokenType::CloseCurlyBraces) {
+				self.assert_peek(TokenType::Comma)?;
+			}
+		}
+		self.assert_peek(TokenType::CloseCurlyBraces)?;
+
+		object.into()
+	}
+
 	fn prefix_parse(&mut self, _precedence: Precedence) -> Result<Box<Expression>> {
 		let token_data = self.get_current_token_data()?;
 		let token = token_data.token();
@@ -279,7 +308,7 @@ impl Parser {
 			TokenType::If => self.parse_if_expression(),
 			TokenType::Function => self.parse_function_literal(),
 			TokenType::OpenSquareBraces => self.parse_array_literal(),
-			TokenType::OpenCurlyBraces => todo!("Object parser"),
+			TokenType::OpenCurlyBraces => self.parse_object_literal(),
 			other => bail!(
 				"No parsing function exists for the `{:?}` token type @ {}",
 				other,

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{bail, Result};
 
 use super::{
@@ -5,7 +7,7 @@ use super::{
 		ast::{
 			ArrayLiteralExpr, BlockStmt, BooleanExpr, Expression, ExpressionStmt,
 			FunctionLiteralExpr, IdentifierExpr, IfExpr, InfixExpr, IntegerExpr, LetStmt,
-			ReturnStmt, Statement, StringExpr,
+			ObjectLiteralExpr, ReturnStmt, Statement, StringExpr,
 		},
 		token::Token,
 	},
@@ -773,6 +775,7 @@ fn empty_array_literal_expression_parsing() -> Result<()> {
 
 	Ok(())
 }
+
 #[test]
 fn array_literal_expression_parsing() -> Result<()> {
 	let input = r#"[1, 2, 3, "some string", true]"#;
@@ -815,6 +818,103 @@ fn array_literal_expression_parsing() -> Result<()> {
 						value: true,
 					})
 				]
+			})))
+		})]
+	);
+
+	Ok(())
+}
+
+#[test]
+fn empty_object_literal_expression_parsing() -> Result<()> {
+	let input = "{}";
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	assert_eq!(
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::OpenCurlyBraces,
+			expression: Some(Box::new(Expression::ObjectLiteral(ObjectLiteralExpr {
+				token: Token::OpenCurlyBraces,
+				pairs: HashMap::new()
+			})))
+		})]
+	);
+
+	Ok(())
+}
+
+#[test]
+fn object_literal_expression_parsing() -> Result<()> {
+	let input = r#"{ "one": 1, "two": true, "sum": 1 / 2 + 3 }"#;
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	let pairs: HashMap<String, Expression> = [
+		(
+			r#""one""#.to_string(),
+			Expression::Integer(IntegerExpr {
+				token: Token::Integer("1".to_string()),
+				value: 1,
+			}),
+		),
+		(
+			r#""two""#.to_string(),
+			Expression::Boolean(BooleanExpr {
+				token: Token::True,
+				value: true,
+			}),
+		),
+		(
+			r#""sum""#.to_string(),
+			Expression::Infix(InfixExpr {
+				token: Token::Plus,
+				left: Box::new(Expression::Infix(InfixExpr {
+					token: Token::Slash,
+					left: Box::new(Expression::Integer(IntegerExpr {
+						token: Token::Integer("1".to_string()),
+						value: 1,
+					})),
+					op: "/".to_string(),
+					right: Box::new(Expression::Integer(IntegerExpr {
+						token: Token::Integer("2".to_string()),
+						value: 2,
+					})),
+				})),
+				op: "+".to_string(),
+				right: Box::new(Expression::Integer(IntegerExpr {
+					token: Token::Integer("3".to_string()),
+					value: 3,
+				})),
+			}),
+		),
+	]
+	.into();
+
+	assert_eq!(
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::OpenCurlyBraces,
+			expression: Some(Box::new(Expression::ObjectLiteral(ObjectLiteralExpr {
+				token: Token::OpenCurlyBraces,
+				pairs
 			})))
 		})]
 	);
