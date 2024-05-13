@@ -5,8 +5,8 @@ use anyhow::{bail, Result};
 use super::{
 	ast::{
 		ArrayLiteralExpr, BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr,
-		IdentifierExpr, IfExpr, InfixExpr, IntegerExpr, LetStmt, ObjectLiteralExpr, PrefixExpr,
-		Program, ReturnStmt, Statement, StringExpr,
+		IdentifierExpr, IfExpr, IndexExpr, InfixExpr, IntegerExpr, LetStmt, ObjectLiteralExpr,
+		PrefixExpr, Program, ReturnStmt, Statement, StringExpr,
 	},
 	lexer::Lexer,
 	token::{Token, TokenData, TokenType},
@@ -73,7 +73,7 @@ impl Parser {
 			token_peek: None,
 		};
 
-		// This is to make sure that both the `token_current` and `token_peek` are filled
+		// NOTE: This is to make sure that both the `token_current` and `token_peek` are filled
 		p.next_token();
 		p.next_token();
 		p
@@ -106,15 +106,44 @@ impl Parser {
 		let precedence = self.current_precedence()?;
 		self.next_token();
 
-		let right = self.parse_expression(precedence)?;
-		let infix_expr = InfixExpr {
-			token: token.clone(),
-			left,
-			op: token.to_string(),
-			right,
-		};
+		match TokenType::from(token.clone()) {
+			TokenType::Plus
+			| TokenType::Minus
+			| TokenType::Asterisk
+			| TokenType::Slash
+			| TokenType::Equal
+			| TokenType::DoubleEqual
+			| TokenType::NotEqual
+			| TokenType::GreaterThan
+			| TokenType::GreaterThanOrEqual
+			| TokenType::LessThan
+			| TokenType::LessThanOrEqual => {
+				let right = self.parse_expression(precedence)?;
+				let infix_expr = InfixExpr {
+					token: token.clone(),
+					left,
+					op: token.to_string(),
+					right,
+				};
 
-		infix_expr.into()
+				infix_expr.into()
+			}
+			TokenType::OpenParens => todo!("`(` call infix operator"),
+			TokenType::OpenSquareBraces => {
+				self.next_token();
+
+				let index = self.parse_expression(Precedence::default())?;
+				let exp = IndexExpr {
+					token,
+					value: left,
+					index,
+				};
+				self.assert_peek(TokenType::CloseSquareBraces)?;
+
+				exp.into()
+			}
+			other => bail!("The `{:?}` token is not a valid infix operator", other),
+		}
 	}
 
 	fn parse_if_expression(&mut self) -> Result<Box<Expression>> {

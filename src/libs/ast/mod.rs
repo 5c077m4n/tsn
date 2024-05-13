@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::fmt;
+use std::{collections::HashMap, fmt};
 
 use anyhow::Result;
 
@@ -125,6 +124,18 @@ impl From<ObjectLiteralExpr> for Result<Box<Expression>> {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct IndexExpr {
+	/// `Token::OpenSquareBraces`
+	pub token: Token,
+	pub value: Box<Expression>,
+	pub index: Box<Expression>,
+}
+impl From<IndexExpr> for Result<Box<Expression>> {
+	fn from(val: IndexExpr) -> Self {
+		Ok(Box::new(Expression::Index(val)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
@@ -136,13 +147,14 @@ pub enum Expression {
 	FunctionLiteral(FunctionLiteralExpr),
 	ArrayLiteral(ArrayLiteralExpr),
 	ObjectLiteral(ObjectLiteralExpr),
+	Index(IndexExpr),
 }
 impl Node for Expression {
 	fn token_literal(&self) -> String {
 		match self {
 			Self::Identifier(IdentifierExpr { token, .. }) => token.to_string(),
 			Self::Integer(IntegerExpr { token, .. }) => token.to_string(),
-			Expression::String(StringExpr { token, .. }) => token.to_string(),
+			Self::String(StringExpr { token, .. }) => token.to_string(),
 			Self::Prefix(PrefixExpr { token, .. }) => token.to_string(),
 			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
 			Self::Boolean(BooleanExpr { token, .. }) => token.to_string(),
@@ -150,6 +162,7 @@ impl Node for Expression {
 			Self::FunctionLiteral(FunctionLiteralExpr { token, .. }) => token.to_string(),
 			Self::ArrayLiteral(ArrayLiteralExpr { token, .. }) => token.to_string(),
 			Self::ObjectLiteral(ObjectLiteralExpr { token, .. }) => token.to_string(),
+			Self::Index(IndexExpr { token, .. }) => token.to_string(),
 		}
 	}
 }
@@ -202,6 +215,13 @@ impl fmt::Display for Expression {
 					write!(f, "{}: {}, ", key, value)?;
 				}
 				write!(f, " }}")
+			}
+			Self::Index(IndexExpr {
+				token: _,
+				value,
+				index,
+			}) => {
+				write!(f, "({}[{}])", value, index)
 			}
 		}
 	}
