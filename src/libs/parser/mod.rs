@@ -12,7 +12,7 @@ use super::{
 	token::{Token, TokenData},
 };
 
-static PREFIX_TOKENS: &[Token] = &[
+static INFIX_TOKENS: &[Token; 12] = &[
 	Token::Plus,
 	Token::Minus,
 	Token::Slash,
@@ -23,6 +23,8 @@ static PREFIX_TOKENS: &[Token] = &[
 	Token::LessThanOrEqual,
 	Token::GreaterThan,
 	Token::GreaterThanOrEqual,
+	Token::OpenParens,
+	Token::OpenSquareBraces,
 ];
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -114,7 +116,6 @@ impl Parser {
 			| Token::Minus
 			| Token::Asterisk
 			| Token::Slash
-			| Token::Equal
 			| Token::DoubleEqual
 			| Token::NotEqual
 			| Token::GreaterThan
@@ -464,8 +465,8 @@ impl Parser {
 		let mut left_expr = self.prefix_parse(Precedence::default())?;
 
 		while {
-			if let Some(ref token_data) = self.current_token_data {
-				!PREFIX_TOKENS.contains(token_data.token())
+			if let Some(token_data) = &self.current_token_data {
+				!INFIX_TOKENS.contains(token_data.token())
 					&& self.peek_token_is_not(&Token::Semicolon)
 					&& self.peek_precedence()? > precedence
 			} else {
