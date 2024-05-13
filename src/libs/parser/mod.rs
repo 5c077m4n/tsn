@@ -9,18 +9,20 @@ use super::{
 		PrefixExpr, Program, ReturnStmt, Statement, StringExpr,
 	},
 	lexer::Lexer,
-	token::{Token, TokenData, TokenType},
+	token::{Token, TokenData},
 };
 
-static PREFIX_TOKEN_TYPES: &[TokenType; 8] = &[
-	TokenType::Plus,
-	TokenType::Minus,
-	TokenType::Slash,
-	TokenType::Asterisk,
-	TokenType::DoubleEqual,
-	TokenType::NotEqual,
-	TokenType::LessThan,
-	TokenType::GreaterThan,
+static PREFIX_TOKENS: &[Token] = &[
+	Token::Plus,
+	Token::Minus,
+	Token::Slash,
+	Token::Asterisk,
+	Token::DoubleEqual,
+	Token::NotEqual,
+	Token::LessThan,
+	Token::LessThanOrEqual,
+	Token::GreaterThan,
+	Token::GreaterThanOrEqual,
 ];
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -40,14 +42,14 @@ enum Precedence {
 	/// `fnCall(X)`
 	Call,
 }
-impl From<TokenType> for Precedence {
-	fn from(value: TokenType) -> Self {
+impl From<&Token> for Precedence {
+	fn from(value: &Token) -> Self {
 		match value {
-			TokenType::DoubleEqual | TokenType::NotEqual => Self::Equals,
-			TokenType::LessThan | TokenType::GreaterThan => Self::LessOrGreater,
-			TokenType::Plus | TokenType::Minus => Self::Sum,
-			TokenType::Asterisk | TokenType::Slash => Self::Product,
-			TokenType::OpenParens => Self::Call,
+			Token::DoubleEqual | Token::NotEqual => Self::Equals,
+			Token::LessThan | Token::GreaterThan => Self::LessOrGreater,
+			Token::Plus | Token::Minus => Self::Sum,
+			Token::Asterisk | Token::Slash => Self::Product,
+			Token::OpenParens => Self::Call,
 			_ => Self::default(),
 		}
 	}
@@ -56,21 +58,22 @@ impl From<TokenType> for Precedence {
 pub struct Parser {
 	lexer: Box<Lexer>,
 	errors: Vec<String>,
-	token_current: Option<TokenData>,
-	token_peek: Option<TokenData>,
+	current_token_data: Option<TokenData>,
+	peek_token_data: Option<TokenData>,
 }
 impl Parser {
 	fn next_token(&mut self) {
-		self.token_peek.clone_into(&mut self.token_current);
-		self.token_peek = self.lexer.next();
+		self.peek_token_data
+			.clone_into(&mut self.current_token_data);
+		self.peek_token_data = self.lexer.next();
 	}
 
 	pub fn new(lexer: Box<Lexer>) -> Self {
 		let mut p = Self {
 			lexer,
 			errors: vec![],
-			token_current: None,
-			token_peek: None,
+			current_token_data: None,
+			peek_token_data: None,
 		};
 
 		// NOTE: This is to make sure that both the `token_current` and `token_peek` are filled
@@ -80,13 +83,13 @@ impl Parser {
 	}
 
 	fn get_current_token_data(&self) -> Result<&TokenData> {
-		let Some(token_data) = self.token_current.as_ref() else {
+		let Some(token_data) = self.current_token_data.as_ref() else {
 			bail!("The current token is empty");
 		};
 		Ok(token_data)
 	}
 	fn get_peek_token_data(&self) -> Result<&TokenData> {
-		let Some(token_data) = self.token_peek.as_ref() else {
+		let Some(token_data) = self.peek_token_data.as_ref() else {
 			bail!("The peek token is empty");
 		};
 		Ok(token_data)
@@ -94,11 +97,11 @@ impl Parser {
 
 	fn current_precedence(&self) -> Result<Precedence> {
 		let token = self.get_current_token_data()?.token();
-		Ok(Precedence::from(TokenType::from(token)))
+		Ok(Precedence::from(token))
 	}
 	fn peek_precedence(&self) -> Result<Precedence> {
 		let token = self.get_peek_token_data()?.token();
-		Ok(Precedence::from(TokenType::from(token)))
+		Ok(Precedence::from(token))
 	}
 
 	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
@@ -106,18 +109,18 @@ impl Parser {
 		let precedence = self.current_precedence()?;
 		self.next_token();
 
-		match TokenType::from(token.clone()) {
-			TokenType::Plus
-			| TokenType::Minus
-			| TokenType::Asterisk
-			| TokenType::Slash
-			| TokenType::Equal
-			| TokenType::DoubleEqual
-			| TokenType::NotEqual
-			| TokenType::GreaterThan
-			| TokenType::GreaterThanOrEqual
-			| TokenType::LessThan
-			| TokenType::LessThanOrEqual => {
+		match token {
+			Token::Plus
+			| Token::Minus
+			| Token::Asterisk
+			| Token::Slash
+			| Token::Equal
+			| Token::DoubleEqual
+			| Token::NotEqual
+			| Token::GreaterThan
+			| Token::GreaterThanOrEqual
+			| Token::LessThan
+			| Token::LessThanOrEqual => {
 				let right = self.parse_expression(precedence)?;
 				let infix_expr = InfixExpr {
 					token: token.clone(),
@@ -128,8 +131,8 @@ impl Parser {
 
 				infix_expr.into()
 			}
-			TokenType::OpenParens => todo!("`(` call infix operator"),
-			TokenType::OpenSquareBraces => {
+			Token::OpenParens => todo!("`(` call infix operator"),
+			Token::OpenSquareBraces => {
 				self.next_token();
 
 				let index = self.parse_expression(Precedence::default())?;
@@ -138,7 +141,7 @@ impl Parser {
 					value: left,
 					index,
 				};
-				self.assert_peek(TokenType::CloseSquareBraces)?;
+				self.assert_peek(&Token::CloseSquareBraces)?;
 
 				exp.into()
 			}
@@ -149,11 +152,11 @@ impl Parser {
 	fn parse_if_expression(&mut self) -> Result<Box<Expression>> {
 		let token = self.get_current_token_data()?.token().clone();
 
-		self.assert_peek(TokenType::OpenParens)?;
+		self.assert_peek(&Token::OpenParens)?;
 		self.next_token();
 
 		let cond = self.parse_expression(Precedence::default())?;
-		self.assert_peek(TokenType::CloseParens)?;
+		self.assert_peek(&Token::CloseParens)?;
 
 		let then = self.parse_block_statement()?;
 		let mut expr = IfExpr {
@@ -163,7 +166,7 @@ impl Parser {
 			alt: None,
 		};
 
-		if self.peek_token_is(TokenType::Else) {
+		if self.peek_token_is(&Token::Else) {
 			self.next_token();
 			expr.alt = Some(self.parse_block_statement()?);
 		}
@@ -172,11 +175,11 @@ impl Parser {
 	}
 
 	fn parse_function_params(&mut self) -> Result<Vec<IdentifierExpr>> {
-		self.assert_peek(TokenType::OpenParens)?;
+		self.assert_peek(&Token::OpenParens)?;
 
 		let mut idents: Vec<IdentifierExpr> = vec![];
 
-		if self.peek_token_is(TokenType::CloseParens) {
+		if self.peek_token_is(&Token::CloseParens) {
 			self.next_token();
 			return Ok(idents);
 		}
@@ -190,7 +193,7 @@ impl Parser {
 		};
 		idents.push(ident);
 
-		while self.peek_token_is(TokenType::Comma) {
+		while self.peek_token_is(&Token::Comma) {
 			self.next_token();
 			self.next_token();
 
@@ -202,7 +205,7 @@ impl Parser {
 			idents.push(ident);
 		}
 
-		self.assert_peek(TokenType::CloseParens)?;
+		self.assert_peek(&Token::CloseParens)?;
 
 		Ok(idents)
 	}
@@ -221,7 +224,7 @@ impl Parser {
 		fn_lit.into()
 	}
 
-	fn parse_expression_list(&mut self, closing_token: TokenType) -> Result<Vec<Expression>> {
+	fn parse_expression_list(&mut self, closing_token: &Token) -> Result<Vec<Expression>> {
 		let mut exprs: Vec<Expression> = vec![];
 
 		if self.peek_token_is(closing_token) {
@@ -231,7 +234,7 @@ impl Parser {
 
 		exprs.push(*self.parse_expression(Precedence::default())?);
 
-		while self.peek_token_is(TokenType::Comma) {
+		while self.peek_token_is(&Token::Comma) {
 			self.next_token();
 			self.next_token();
 			exprs.push(*self.parse_expression(Precedence::default())?);
@@ -244,7 +247,7 @@ impl Parser {
 		let token = self.get_current_token_data()?.token().clone();
 		let array = ArrayLiteralExpr {
 			token,
-			elements: self.parse_expression_list(TokenType::CloseSquareBraces)?,
+			elements: self.parse_expression_list(&Token::CloseSquareBraces)?,
 		};
 
 		array.into()
@@ -257,22 +260,22 @@ impl Parser {
 			pairs: HashMap::new(),
 		};
 
-		while self.peek_token_is_not(TokenType::CloseCurlyBraces) {
+		while self.peek_token_is_not(&Token::CloseCurlyBraces) {
 			self.next_token();
 
 			let key = self.parse_expression(Precedence::default())?;
-			self.assert_peek(TokenType::Colon)?;
+			self.assert_peek(&Token::Colon)?;
 
 			self.next_token();
 			let value = self.parse_expression(Precedence::default())?;
 
 			object.pairs.insert(key.to_string(), *value);
 
-			if self.peek_token_is_not(TokenType::CloseCurlyBraces) {
-				self.assert_peek(TokenType::Comma)?;
+			if self.peek_token_is_not(&Token::CloseCurlyBraces) {
+				self.assert_peek(&Token::Comma)?;
 			}
 		}
-		self.assert_peek(TokenType::CloseCurlyBraces)?;
+		self.assert_peek(&Token::CloseCurlyBraces)?;
 
 		object.into()
 	}
@@ -281,15 +284,15 @@ impl Parser {
 		let token_data = self.get_current_token_data()?;
 		let token = token_data.token();
 
-		match TokenType::from(token) {
-			TokenType::True | TokenType::False => {
+		match token {
+			Token::True | Token::False => {
 				let bool_expr = BooleanExpr {
 					token: token.clone(),
-					value: self.current_token_is(TokenType::True),
+					value: self.current_token_is(&Token::True),
 				};
 				bool_expr.into()
 			}
-			TokenType::Identifier => {
+			Token::Identifier(_) => {
 				let token = token.clone();
 
 				let value = token.to_string();
@@ -297,7 +300,7 @@ impl Parser {
 
 				ident_expr.into()
 			}
-			TokenType::Integer => {
+			Token::Integer(_) => {
 				let token = token.clone();
 
 				let value = token.to_string().parse::<usize>()?;
@@ -305,7 +308,7 @@ impl Parser {
 
 				int_literal.into()
 			}
-			TokenType::String => {
+			Token::String(_) => {
 				let token = token.clone();
 
 				let value = token.to_string();
@@ -313,7 +316,7 @@ impl Parser {
 
 				str_literal.into()
 			}
-			TokenType::Bang | TokenType::Minus => {
+			Token::Bang | Token::Minus => {
 				let token = self.get_current_token_data()?.token().clone();
 				self.next_token();
 
@@ -326,18 +329,18 @@ impl Parser {
 
 				prefix_expr.into()
 			}
-			TokenType::OpenParens => {
+			Token::OpenParens => {
 				self.next_token();
 				let expr = self.parse_expression(Precedence::default());
 
-				self.assert_peek(TokenType::CloseParens)?;
+				self.assert_peek(&Token::CloseParens)?;
 
 				expr
 			}
-			TokenType::If => self.parse_if_expression(),
-			TokenType::Function => self.parse_function_literal(),
-			TokenType::OpenSquareBraces => self.parse_array_literal(),
-			TokenType::OpenCurlyBraces => self.parse_object_literal(),
+			Token::If => self.parse_if_expression(),
+			Token::Function => self.parse_function_literal(),
+			Token::OpenSquareBraces => self.parse_array_literal(),
+			Token::OpenCurlyBraces => self.parse_object_literal(),
 			other => bail!(
 				"No parsing function exists for the `{:?}` token type @ {}",
 				other,
@@ -350,52 +353,50 @@ impl Parser {
 		&self.errors
 	}
 
-	fn current_token_is(&self, t: TokenType) -> bool {
-		self.token_current
+	fn current_token_is(&self, t: &Token) -> bool {
+		self.current_token_data
 			.as_ref()
-			.is_some_and(|token_data| TokenType::from(token_data.token()) == t)
+			.is_some_and(|token_data| token_data.token().is_of_type(t))
 	}
-	fn current_token_is_not(&self, t: TokenType) -> bool {
-		self.token_current
+	fn current_token_is_not(&self, t: &Token) -> bool {
+		self.current_token_data
 			.as_ref()
-			.is_some_and(|token_data| TokenType::from(token_data.token()) != t)
+			.is_some_and(|token_data| !token_data.token().is_of_type(t))
 	}
-	fn peek_token_is(&self, t: TokenType) -> bool {
-		self.token_peek
+	fn peek_token_is(&self, t: &Token) -> bool {
+		self.peek_token_data
 			.as_ref()
-			.is_some_and(|token_data| TokenType::from(token_data.token()) == t)
+			.is_some_and(|token_data| token_data.token().is_of_type(t))
 	}
-	fn peek_token_is_not(&self, t: TokenType) -> bool {
-		self.token_peek
+	fn peek_token_is_not(&self, t: &Token) -> bool {
+		self.peek_token_data
 			.as_ref()
-			.is_some_and(|token_data| TokenType::from(token_data.token()) != t)
+			.is_some_and(|token_data| !token_data.token().is_of_type(t))
 	}
 
-	fn assert_peek(&mut self, t: TokenType) -> Result<()> {
-		if let Some(token_data) = &self.token_peek {
-			if TokenType::from(token_data.token()) != t {
-				bail!(
-					"Expected the next token to be `{:?}`, but got `{:?}` @ {} instead",
-					t,
-					token_data.token(),
-					token_data.location()
-				);
-			} else {
+	fn assert_peek(&mut self, t: &Token) -> Result<()> {
+		match &self.peek_token_data {
+			Some(token_data) if token_data.token().is_of_type(t) => {
 				self.next_token();
 				Ok(())
 			}
-		} else {
-			bail!(
+			Some(token_data) => bail!(
+				"Expected the next token to be `{:?}`, but got `{:?}` @ {} instead",
+				t,
+				token_data.token(),
+				token_data.location()
+			),
+			None => bail!(
 				"Expected the next token to be `{:?}`, but got nothing instead",
 				t
-			)
+			),
 		}
 	}
 
 	fn parse_let_statement(&mut self) -> Result<Box<Statement>> {
 		let let_token = self.get_current_token_data()?.token().clone();
 
-		self.assert_peek(TokenType::Identifier)?;
+		self.assert_peek(&Token::Identifier("_".to_string()))?;
 
 		let ident_token = self.get_current_token_data()?.token();
 		let name = IdentifierExpr {
@@ -409,11 +410,11 @@ impl Parser {
 		};
 
 		self.next_token();
-		if self.current_token_is(TokenType::Equal) {
+		if self.current_token_is(&Token::Equal) {
 			self.next_token();
 			let_stmt.value = Some(self.parse_expression(Precedence::default())?);
 		}
-		if self.peek_token_is(TokenType::Semicolon) {
+		if self.peek_token_is(&Token::Semicolon) {
 			self.next_token();
 		}
 
@@ -429,10 +430,10 @@ impl Parser {
 		};
 		self.next_token();
 
-		if self.current_token_is_not(TokenType::Semicolon) {
+		if self.current_token_is_not(&Token::Semicolon) {
 			ret_stmt.value = Some(self.parse_expression(Precedence::default())?);
 		}
-		if self.peek_token_is(TokenType::Semicolon) {
+		if self.peek_token_is(&Token::Semicolon) {
 			self.next_token();
 		}
 
@@ -440,7 +441,7 @@ impl Parser {
 	}
 
 	fn parse_block_statement(&mut self) -> Result<Box<BlockStmt>> {
-		self.assert_peek(TokenType::OpenCurlyBraces)?;
+		self.assert_peek(&Token::OpenCurlyBraces)?;
 
 		let token = self.get_current_token_data()?.token().clone();
 		let mut block = BlockStmt {
@@ -449,7 +450,7 @@ impl Parser {
 		};
 		self.next_token();
 
-		while self.current_token_is_not(TokenType::CloseCurlyBraces) {
+		while self.current_token_is_not(&Token::CloseCurlyBraces) {
 			let stmt = self.parse_statement()?;
 			block.statements.push(*stmt);
 
@@ -463,10 +464,9 @@ impl Parser {
 		let mut left_expr = self.prefix_parse(Precedence::default())?;
 
 		while {
-			if let Some(ref token_data) = self.token_current {
-				let token_type = TokenType::from(token_data.token());
-				!PREFIX_TOKEN_TYPES.contains(&token_type)
-					&& self.peek_token_is_not(TokenType::Semicolon)
+			if let Some(ref token_data) = self.current_token_data {
+				!PREFIX_TOKENS.contains(token_data.token())
+					&& self.peek_token_is_not(&Token::Semicolon)
 					&& self.peek_precedence()? > precedence
 			} else {
 				false
@@ -490,7 +490,7 @@ impl Parser {
 		expr_stmt.expression = Some(expr);
 
 		// TODO: remove this token skipping
-		while self.current_token_is_not(TokenType::Semicolon) {
+		while self.current_token_is_not(&Token::Semicolon) {
 			self.next_token();
 		}
 
@@ -498,7 +498,11 @@ impl Parser {
 	}
 
 	fn parse_statement(&mut self) -> Result<Box<Statement>> {
-		match self.token_current.clone().map(|td| td.token().to_owned()) {
+		match self
+			.current_token_data
+			.clone()
+			.map(|td| td.token().to_owned())
+		{
 			Some(Token::Let) => self.parse_let_statement(),
 			Some(Token::Return) => self.parse_return_statement(),
 			None => bail!("The current token should not be empty here"),
@@ -509,7 +513,7 @@ impl Parser {
 	pub fn parse_program(&mut self) -> Result<Box<Program>> {
 		let mut program = Box::<Program>::default();
 
-		while self.token_current.is_some() {
+		while self.current_token_data.is_some() {
 			match self.parse_statement() {
 				Ok(s) => program.statements.push(*s),
 				Err(msg) => self.errors.push(msg.to_string()),

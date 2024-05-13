@@ -1,10 +1,9 @@
-use std::fmt::{self, Display};
+use std::{
+	fmt::{self, Display},
+	mem::discriminant,
+};
 
-use strum_macros::{EnumDiscriminants, EnumIter};
-
-#[derive(Debug, Clone, PartialEq, Eq, EnumDiscriminants)]
-#[strum_discriminants(derive(EnumIter))]
-#[strum_discriminants(name(TokenType))]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
 	Illegal(String),
 	EndOfFile,
@@ -80,6 +79,11 @@ pub enum Token {
 	Return,
 	True,
 	False,
+}
+impl Token {
+	pub fn is_of_type(&self, other: &Self) -> bool {
+		discriminant(self) == discriminant(other)
+	}
 }
 
 impl From<&[u8]> for Token {
