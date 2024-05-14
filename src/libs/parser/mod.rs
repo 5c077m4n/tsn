@@ -43,6 +43,8 @@ enum Precedence {
 	Prefix,
 	/// `fnCall(X)`
 	Call,
+	/// object[index]
+	Index,
 }
 impl From<&Token> for Precedence {
 	fn from(value: &Token) -> Self {
@@ -55,6 +57,7 @@ impl From<&Token> for Precedence {
 			Token::Plus | Token::Minus => Self::Sum,
 			Token::Asterisk | Token::Slash => Self::Product,
 			Token::OpenParens => Self::Call,
+			Token::OpenSquareBraces => Self::Index,
 			_ => Self::default(),
 		}
 	}
@@ -137,8 +140,6 @@ impl Parser {
 			}
 			Token::OpenParens => todo!("`(` call infix operator"),
 			Token::OpenSquareBraces => {
-				self.next_token();
-
 				let index = self.parse_expression(Precedence::default())?;
 				let exp = IndexExpr {
 					token,

@@ -916,7 +916,7 @@ fn object_literal_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn some_ident_index_expression_parsing() -> Result<()> {
+fn some_ident_index_expr() -> Result<()> {
 	let input = r#"myObject["one"]"#;
 
 	let lexer = Lexer::new(input);
@@ -940,8 +940,8 @@ fn some_ident_index_expression_parsing() -> Result<()> {
 					value: "myObject".to_string(),
 				})),
 				index: Box::new(Expression::String(StringExpr {
-					token: Token::String("one".to_string()),
-					value: "one".to_string()
+					token: Token::String(r#""one""#.to_string()),
+					value: r#""one""#.to_string()
 				})),
 			})))
 		})]
@@ -951,7 +951,7 @@ fn some_ident_index_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn object_literal_index_expression_parsing() -> Result<()> {
+fn object_literal_index_expr() -> Result<()> {
 	let input = r#"{ "one": 1, "two": true, "sum": 1 / 2 + 3 }["one"]"#;
 
 	let lexer = Lexer::new(input);
@@ -1016,8 +1016,8 @@ fn object_literal_index_expression_parsing() -> Result<()> {
 					pairs
 				})),
 				index: Box::new(Expression::String(StringExpr {
-					token: Token::String("one".to_string()),
-					value: "one".to_string()
+					token: Token::String(r#""one""#.to_string()),
+					value: r#""one""#.to_string()
 				})),
 			})))
 		})]
