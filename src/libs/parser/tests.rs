@@ -7,7 +7,7 @@ use super::{
 		ast::{
 			ArrayLiteralExpr, BlockStmt, BooleanExpr, Expression, ExpressionStmt,
 			FunctionLiteralExpr, IdentifierExpr, IfExpr, IndexExpr, InfixExpr, IntegerExpr,
-			LetStmt, ObjectLiteralExpr, ReturnStmt, Statement, StringExpr,
+			LetStmt, ObjectLiteralExpr, PrefixExpr, ReturnStmt, Statement, StringExpr,
 		},
 		token::Token,
 	},
@@ -216,59 +216,61 @@ fn return_parsing() -> Result<()> {
 
 #[test]
 fn ident_expr() -> Result<()> {
-	let input = "foobar;";
-
-	let lexer = Lexer::new(input);
+	let lexer = Lexer::new("foobar;");
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
-	assert!(parser.errors().is_empty());
-	assert_eq!(program.statements.len(), 1);
+	assert!(
+		parser.errors().is_empty(),
+		"Unexpected errors: {:?}",
+		parser.errors()
+	);
 
-	let expr = program.statements.first().unwrap();
-	let expr = match expr {
-		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-		other => bail!("Should not have type {:?}", other),
-	};
-
-	let expr_stmt = expr.as_ref().unwrap().as_ref();
-	let ident = match expr_stmt {
-		Expression::Identifier(ident_expr) => ident_expr,
-		other => bail!("Should not have type {:?}", other),
-	};
-
-	assert_eq!(ident.value, "foobar");
-	assert_eq!(ident.token.to_string(), "foobar");
+	assert_eq!(
+		program.statements,
+		&[Statement::Expression(ExpressionStmt {
+			token: Token::Identifier("foobar".to_string()),
+			expression: Some(Box::new(Expression::Identifier(IdentifierExpr {
+				token: Token::Identifier("foobar".to_string()),
+				value: "foobar".to_string()
+			})))
+		})]
+	);
 
 	Ok(())
 }
 
 #[test]
 fn bool_lit_expr() -> Result<()> {
-	let tests = &[("true;", true), ("false;", false)];
+	let tests = &[
+		("true;", true),
+		("false;", false),
+		("true", true),
+		("false", false),
+	];
 
-	for test in tests {
-		let lexer = Lexer::new(test.0);
+	for (input, expected) in tests {
+		let lexer = Lexer::new(input);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
-		assert!(parser.errors().is_empty());
-		assert_eq!(program.statements.len(), 1);
+		assert!(
+			parser.errors().is_empty(),
+			"Unexpected errors: {:?}",
+			parser.errors()
+		);
 
-		let expr = program.statements.first().unwrap();
-		let expr = match expr {
-			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-			other => bail!("Should be an expression, not {:?}", other),
-		};
-
-		let expr_stmt = expr.as_ref().unwrap().as_ref();
-		let ident = match expr_stmt {
-			Expression::Boolean(bool_expr) => bool_expr,
-			other => bail!("Should be a boolean, not {:?}", other),
-		};
-
-		assert_eq!(ident.value, test.1);
-		assert_eq!(ident.token.to_string(), test.1.to_string());
+		let expected = *expected;
+		assert_eq!(
+			program.statements,
+			&[Statement::Expression(ExpressionStmt {
+				token: if expected { Token::True } else { Token::False },
+				expression: Some(Box::new(Expression::Boolean(BooleanExpr {
+					token: if expected { Token::True } else { Token::False },
+					value: expected
+				})))
+			})]
+		);
 	}
 
 	Ok(())
@@ -282,91 +284,77 @@ fn int_lit_expr() -> Result<()> {
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
 
-	assert!(parser.errors().is_empty());
-	assert_eq!(program.statements.len(), 1);
-
-	let expr = program.statements.first().unwrap();
-	let expr = match expr {
-		Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-		other => bail!("Should not have type {:?}", other),
-	};
-
-	let expr_stmt = expr.as_ref().unwrap().as_ref();
-	let ident = match expr_stmt {
-		Expression::Integer(int_expr) => int_expr,
-		other => bail!("Should not have type {:?}", other),
-	};
-
-	assert_eq!(ident.value, 5);
-	assert_eq!(ident.token.to_string(), "5");
+	assert!(
+		parser.errors().is_empty(),
+		"Unexpected errors: {:?}",
+		parser.errors()
+	);
+	assert_eq!(
+		program.statements,
+		&[Statement::Expression(ExpressionStmt {
+			token: Token::Integer("5".to_string()),
+			expression: Some(Box::new(Expression::Integer(IntegerExpr {
+				token: Token::Integer("5".to_string()),
+				value: 5
+			})))
+		})]
+	);
 
 	Ok(())
 }
 
 #[test]
 fn prefix_expr() -> Result<()> {
-	let tests = &[("!5;", "(!5)"), ("-5;", "(-5)")];
+	let tests = &[("!5;", "(!5)"), ("-5;", "(-5)"), ("+5;", "(+5)")];
 
-	for test in tests {
-		let lexer = Lexer::new(test.0);
+	for (input, expected) in tests {
+		let lexer = Lexer::new(input);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
-		assert!(parser.errors().is_empty());
-		assert_eq!(program.statements.len(), 1);
-
-		let expr = program.statements.first().unwrap();
-		let expr = match expr {
-			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-			other => bail!("Should not have type {:?}", other),
-		};
-
-		let expr_stmt = expr.as_ref().unwrap().as_ref();
-		let prefix = match expr_stmt {
-			expr @ Expression::Prefix(_) => expr,
-			other => bail!("Should not have type {:?}", other),
-		};
-		assert_eq!(prefix.to_string(), test.1);
-
-		let Expression::Prefix(ref prefix_expr) = **expr.as_ref().unwrap() else {
-			bail!(
-				"Expected a prefix expression but got: `{}`",
-				**expr.as_ref().unwrap()
-			)
-		};
-
-		assert_eq!(prefix_expr.op, test.1.chars().nth(1).unwrap().to_string());
-		assert_eq!(prefix_expr.right.to_string(), "5");
+		assert!(
+			parser.errors().is_empty(),
+			"Unexpected errors: {:?}",
+			parser.errors()
+		);
+		assert_eq!(program.to_string(), expected.to_string());
 	}
 
 	Ok(())
 }
 #[test]
 
-fn prefix_bool_expr() -> Result<()> {
+fn prefix_bang_bool_expr() -> Result<()> {
 	let tests = &[("!true;", true), ("!false;", false)];
 
-	for test in tests {
-		let lexer = Lexer::new(test.0);
+	for (input, right) in tests {
+		let lexer = Lexer::new(input);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
-		assert!(parser.errors().is_empty());
-		assert_eq!(program.statements.len(), 1);
+		assert!(
+			parser.errors().is_empty(),
+			"Unexpected errors: {:?}",
+			parser.errors()
+		);
 
-		let expr = program.statements.first().unwrap();
-		let expr = match expr {
-			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-			other => bail!("Should not have type {:?}", other),
-		};
-
-		let expr_stmt = expr.as_ref().unwrap().as_ref();
-		let Expression::Prefix(ref prefix_expr) = expr_stmt else {
-			unreachable!("Could not extract the content of the expression")
-		};
-
-		assert_eq!(prefix_expr.op, "!");
-		assert_eq!(prefix_expr.right.to_string(), test.1.to_string());
+		let right = *right;
+		assert_eq!(
+			program.statements,
+			&[Statement::Expression(ExpressionStmt {
+				token: Token::Bang,
+				expression: Some(Box::new(Expression::Prefix(PrefixExpr {
+					token: Token::Bang,
+					op: "!".to_string(),
+					right: Box::new(Expression::Boolean(BooleanExpr {
+						token: if right { Token::True } else { Token::False },
+						value: right
+					}))
+				})))
+			})],
+			"Failed to parse: {:?}",
+			input
+		);
 	}
 
 	Ok(())
@@ -379,59 +367,58 @@ fn infix_numbers_expr() -> Result<()> {
 		("5 - 5;", 5, "-", 5),
 		("5 * 5;", 5, "*", 5),
 		("5 / 5;", 5, "/", 5),
+		("5 <= 5;", 5, "<=", 5),
 		("5 < 5;", 5, "<", 5),
+		("5 >= 5;", 5, ">=", 5),
 		("5 > 5;", 5, ">", 5),
 		("5 == 5;", 5, "==", 5),
 		("5 != 5;", 5, "!=", 5),
 	];
 
-	for test in tests {
-		let lexer = Lexer::new(test.0);
+	for (input, left, op, right) in tests {
+		let lexer = Lexer::new(input);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
-		assert!(parser.errors().is_empty());
-		assert_eq!(
-			program.statements.len(),
-			1,
-			"Wrong number of statements for test `{}`",
-			test.0
+		assert!(
+			parser.errors().is_empty(),
+			"Unexpected errors: {:?}",
+			parser.errors()
 		);
 
-		let expr_stmt = program.statements.first().unwrap();
-		let expr_stmt = match expr_stmt {
-			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-			other => bail!("Should not have type {:?}", other),
-		};
-
-		let expr_stmt = expr_stmt.as_ref().unwrap().as_ref();
-		let prefix = match expr_stmt {
-			expr @ Expression::Infix(_) => expr,
-			other => bail!(
-				"Should be of type `Expression::Infix`, not `{:?}` (in `{}`)",
-				other,
-				test.0
-			),
-		};
-		assert_eq!(
-			prefix.to_string(),
-			format!("({} {} {})", test.1, test.2, test.3)
-		);
-
-		let Expression::Infix(ref infix_expr) = expr_stmt else {
-			unreachable!("Could not extract the content of the expression")
-		};
+		let left = *left;
+		let op = op.to_string();
+		let right = *right;
 
 		assert_eq!(
-			infix_expr.left.to_string(),
-			test.1.to_string(),
-			"Wrong left expression"
-		);
-		assert_eq!(infix_expr.op, test.2, "Wrong operator");
-		assert_eq!(
-			infix_expr.right.to_string(),
-			test.3.to_string(),
-			"Wrong right expression"
+			program.statements,
+			&[Statement::Expression(ExpressionStmt {
+				token: Token::Integer(left.to_string()),
+				expression: Some(Box::new(Expression::Infix(InfixExpr {
+					token: match op.as_str() {
+						"+" => Token::Plus,
+						"-" => Token::Minus,
+						"*" => Token::Asterisk,
+						"/" => Token::Slash,
+						"<=" => Token::LessThanOrEqual,
+						"<" => Token::LessThan,
+						">=" => Token::GreaterThanOrEqual,
+						">" => Token::GreaterThan,
+						"==" => Token::DoubleEqual,
+						"!=" => Token::NotEqual,
+						other => bail!("Unsupported operator {:?}", other),
+					},
+					left: Box::new(Expression::Integer(IntegerExpr {
+						token: Token::Integer(left.to_string()),
+						value: left
+					})),
+					op: op.to_string(),
+					right: Box::new(Expression::Integer(IntegerExpr {
+						token: Token::Integer(right.to_string()),
+						value: right
+					}))
+				})))
+			})]
 		);
 	}
 
@@ -443,56 +430,47 @@ fn infix_bool_expr() -> Result<()> {
 	let tests = &[
 		("true == true;", true, "==", true),
 		("true != false;", true, "!=", false),
+		("false != true;", false, "!=", true),
 		("false == false;", false, "==", false),
 	];
 
-	for test in tests {
-		let lexer = Lexer::new(test.0);
+	for (input, left, op, right) in tests {
+		let lexer = Lexer::new(input);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
-		assert!(parser.errors().is_empty());
-		assert_eq!(
-			program.statements.len(),
-			1,
-			"Wrong number of statements for test `{}`",
-			test.0
+		let left = *left;
+		let op = op.to_string();
+		let right = *right;
+
+		assert!(
+			parser.errors().is_empty(),
+			"Unexpected errors: {:?}",
+			parser.errors()
 		);
-
-		let expr_stmt = program.statements.first().unwrap();
-		let expr_stmt = match expr_stmt {
-			Statement::Expression(ExpressionStmt { expression, .. }) => expression,
-			other => bail!("Should not have type {:?}", other),
-		};
-
-		let expr_stmt = expr_stmt.as_ref().unwrap().as_ref();
-		let prefix = match expr_stmt {
-			expr @ Expression::Infix(_) => expr,
-			other => bail!(
-				"Should be of type `Expression::Infix`, not `{:?}` (in `{}`)",
-				other,
-				test.0
-			),
-		};
 		assert_eq!(
-			prefix.to_string(),
-			format!("({} {} {})", test.1, test.2, test.3)
-		);
-
-		let Expression::Infix(ref infix_expr) = expr_stmt else {
-			unreachable!("Could not extract the content of the expression")
-		};
-
-		assert_eq!(
-			infix_expr.left.to_string(),
-			test.1.to_string(),
-			"Wrong left expression"
-		);
-		assert_eq!(infix_expr.op, test.2, "Wrong operator");
-		assert_eq!(
-			infix_expr.right.to_string(),
-			test.3.to_string(),
-			"Wrong right expression"
+			program.statements,
+			&[Statement::Expression(ExpressionStmt {
+				token: if left { Token::True } else { Token::False },
+				expression: Some(Box::new(Expression::Infix(InfixExpr {
+					token: if op == "==" {
+						Token::DoubleEqual
+					} else {
+						Token::NotEqual
+					},
+					left: Box::new(Expression::Boolean(BooleanExpr {
+						token: if left { Token::True } else { Token::False },
+						value: left
+					})),
+					op,
+					right: Box::new(Expression::Boolean(BooleanExpr {
+						token: if right { Token::True } else { Token::False },
+						value: right
+					}))
+				})))
+			})],
+			"Failed parsing {:?}",
+			input
 		);
 	}
 
@@ -528,27 +506,27 @@ fn operator_precedence_parsing() -> Result<()> {
 		("!(true == true);", "(!(true == true))"),
 	];
 
-	for test in tests {
-		let lexer = Lexer::new(test.0);
+	for (input, expected) in tests {
+		let lexer = Lexer::new(input);
 		let mut parser = Parser::new(Box::new(lexer));
 		let program = parser.parse_program()?;
 
 		assert!(
 			!program.statements.is_empty() && program.statements.len() <= 2,
 			"Wrong number of statements (in `{}`)",
-			test.0
+			input
 		);
 		assert!(
 			parser.errors().is_empty(),
 			"There should be no errors in the parser (in `{}`), but got: {:#?}",
-			test.0,
+			input,
 			parser.errors()
 		);
 		assert_eq!(
-			test.1,
+			expected.to_string(),
 			program.to_string(),
 			"There is a problem in the program's string (in `{}`)",
-			test.0
+			input
 		);
 	}
 
@@ -556,7 +534,7 @@ fn operator_precedence_parsing() -> Result<()> {
 }
 
 #[test]
-fn if_expression_parsing() -> Result<()> {
+fn if_without_else_expression_parsing() -> Result<()> {
 	let input = "if (x < y) { x }";
 
 	let lexer = Lexer::new(input);
@@ -775,7 +753,6 @@ fn empty_array_literal_expression_parsing() -> Result<()> {
 
 	Ok(())
 }
-
 #[test]
 fn array_literal_expression_parsing() -> Result<()> {
 	let input = r#"[1, 2, 3, "some string", true]"#;
@@ -820,6 +797,22 @@ fn array_literal_expression_parsing() -> Result<()> {
 				]
 			})))
 		})]
+	);
+
+	Ok(())
+}
+
+#[test]
+fn array_literal_expression_error_parsing() -> Result<()> {
+	let input = r#"[1, 2, 3,, "some string", true]"#;
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let _program = parser.parse_program()?;
+
+	assert_eq!(
+		parser.errors(),
+		&["No parsing function exists for the `Comma` token type @ 1:10-1:11".to_string()]
 	);
 
 	Ok(())
