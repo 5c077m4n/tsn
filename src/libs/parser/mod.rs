@@ -33,7 +33,7 @@ enum Precedence {
 	Lowest,
 	/// `==`
 	Equals,
-	/// `>` or `<`
+	/// `>`, `>=`, `<` or `<=`
 	LessOrGreater,
 	/// `+` or `-`
 	Sum,
@@ -48,7 +48,10 @@ impl From<&Token> for Precedence {
 	fn from(value: &Token) -> Self {
 		match value {
 			Token::DoubleEqual | Token::NotEqual => Self::Equals,
-			Token::LessThan | Token::GreaterThan => Self::LessOrGreater,
+			Token::LessThan
+			| Token::LessThanOrEqual
+			| Token::GreaterThan
+			| Token::GreaterThanOrEqual => Self::LessOrGreater,
 			Token::Plus | Token::Minus => Self::Sum,
 			Token::Asterisk | Token::Slash => Self::Product,
 			Token::OpenParens => Self::Call,
