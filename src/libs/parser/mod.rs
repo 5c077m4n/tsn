@@ -317,7 +317,7 @@ impl Parser {
 
 				str_literal.into()
 			}
-			Token::Bang | Token::Minus => {
+			Token::Bang | Token::Minus | Token::Plus => {
 				let token = self.get_current_token_data()?.token().clone();
 				self.next_token();
 
