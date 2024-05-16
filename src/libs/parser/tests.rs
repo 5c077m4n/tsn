@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use anyhow::{bail, Result};
 
+use crate::libs::ast::CallExpr;
+
 use super::{
 	super::{
 		ast::{
@@ -727,8 +729,8 @@ fn function_literal_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn empty_array_literal_expression_parsing() -> Result<()> {
-	let input = "[]";
+fn empty_array_literal_expr() -> Result<()> {
+	let input = "[];";
 
 	let lexer = Lexer::new(input);
 	let mut parser = Parser::new(Box::new(lexer));
@@ -753,8 +755,71 @@ fn empty_array_literal_expression_parsing() -> Result<()> {
 
 	Ok(())
 }
+
 #[test]
-fn array_literal_expression_parsing() -> Result<()> {
+fn nested_array_literal_expr() -> Result<()> {
+	let input = r#"[[1, 2], [3, 4], [[]]];"#;
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	assert_eq!(
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::OpenSquareBraces,
+			expression: Some(Box::new(Expression::ArrayLiteral(ArrayLiteralExpr {
+				token: Token::OpenSquareBraces,
+				elements: vec![
+					Expression::ArrayLiteral(ArrayLiteralExpr {
+						token: Token::OpenSquareBraces,
+						elements: vec![
+							Expression::Integer(IntegerExpr {
+								token: Token::Integer("1".to_string()),
+								value: 1
+							}),
+							Expression::Integer(IntegerExpr {
+								token: Token::Integer("2".to_string()),
+								value: 2
+							}),
+						]
+					}),
+					Expression::ArrayLiteral(ArrayLiteralExpr {
+						token: Token::OpenSquareBraces,
+						elements: vec![
+							Expression::Integer(IntegerExpr {
+								token: Token::Integer("3".to_string()),
+								value: 3
+							}),
+							Expression::Integer(IntegerExpr {
+								token: Token::Integer("4".to_string()),
+								value: 4
+							}),
+						]
+					}),
+					Expression::ArrayLiteral(ArrayLiteralExpr {
+						token: Token::OpenSquareBraces,
+						elements: vec![Expression::ArrayLiteral(ArrayLiteralExpr {
+							token: Token::OpenSquareBraces,
+							elements: vec![]
+						})]
+					})
+				]
+			})))
+		})]
+	);
+
+	Ok(())
+}
+
+#[test]
+fn array_literal_expr() -> Result<()> {
 	let input = r#"[1, 2, 3, "some string", true]"#;
 
 	let lexer = Lexer::new(input);
@@ -1062,6 +1127,83 @@ fn object_literal_index_expr() -> Result<()> {
 					token: Token::String(r#""one""#.to_string()),
 					value: r#""one""#.to_string()
 				})),
+			})))
+		})]
+	);
+
+	Ok(())
+}
+
+#[test]
+fn fn_call_without_params_expr() -> Result<()> {
+	let input = r#"myFunc();"#;
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	assert_eq!(
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::Identifier("myFunc".to_string()),
+			expression: Some(Box::new(Expression::Call(CallExpr {
+				token: Token::OpenParens,
+				args: vec![],
+				fn_called: Box::new(Expression::Identifier(IdentifierExpr {
+					token: Token::Identifier("myFunc".to_string()),
+					value: "myFunc".to_string()
+				}))
+			})))
+		})]
+	);
+
+	Ok(())
+}
+
+#[test]
+fn fn_call_with_params_expr() -> Result<()> {
+	let input = r#"myFunc(1, 2, "three", true);"#;
+
+	let lexer = Lexer::new(input);
+	let mut parser = Parser::new(Box::new(lexer));
+	let program = parser.parse_program()?;
+
+	assert!(
+		parser.errors().is_empty(),
+		"There should be no errors in the parser, but got: {:#?}",
+		parser.errors()
+	);
+
+	assert_eq!(
+		program.statements,
+		vec![Statement::Expression(ExpressionStmt {
+			token: Token::Identifier("myFunc".to_string()),
+			expression: Some(Box::new(Expression::Call(CallExpr {
+				token: Token::OpenParens,
+				args: vec![
+					Expression::Integer(IntegerExpr {
+						token: Token::Integer("2".to_string()),
+						value: 2
+					}),
+					Expression::String(StringExpr {
+						token: Token::String(r#""three""#.to_string()),
+						value: r#""three""#.to_string()
+					}),
+					Expression::Boolean(BooleanExpr {
+						token: Token::True,
+						value: true
+					})
+				],
+				fn_called: Box::new(Expression::Identifier(IdentifierExpr {
+					token: Token::Identifier("myFunc".to_string()),
+					value: "myFunc".to_string()
+				}))
 			})))
 		})]
 	);

@@ -4,9 +4,9 @@ use anyhow::{bail, Result};
 
 use super::{
 	ast::{
-		ArrayLiteralExpr, BlockStmt, BooleanExpr, Expression, ExpressionStmt, FunctionLiteralExpr,
-		IdentifierExpr, IfExpr, IndexExpr, InfixExpr, IntegerExpr, LetStmt, ObjectLiteralExpr,
-		PrefixExpr, Program, ReturnStmt, Statement, StringExpr,
+		ArrayLiteralExpr, BlockStmt, BooleanExpr, CallExpr, Expression, ExpressionStmt,
+		FunctionLiteralExpr, IdentifierExpr, IfExpr, IndexExpr, InfixExpr, IntegerExpr, LetStmt,
+		ObjectLiteralExpr, PrefixExpr, Program, ReturnStmt, Statement, StringExpr,
 	},
 	lexer::Lexer,
 	token::{Token, TokenData},
@@ -43,7 +43,7 @@ enum Precedence {
 	Prefix,
 	/// `fnCall(X)`
 	Call,
-	/// object[index]
+	/// objectOrArray[index]
 	Index,
 }
 impl From<&Token> for Precedence {
@@ -112,6 +112,25 @@ impl Parser {
 		Ok(Precedence::from(token))
 	}
 
+	fn parse_expression_list(&mut self, closing_token: &Token) -> Result<Vec<Expression>> {
+		let mut exprs: Vec<Expression> = vec![];
+
+		if self.peek_token_is_not(closing_token) {
+			self.next_token();
+
+			exprs.push(*self.parse_expression(Precedence::default())?);
+
+			while self.peek_token_is(&Token::Comma) {
+				self.next_token();
+				self.next_token();
+				exprs.push(*self.parse_expression(Precedence::default())?);
+			}
+			self.assert_peek(closing_token)?;
+		}
+
+		Ok(exprs)
+	}
+
 	fn infix_parse(&mut self, left: Box<Expression>) -> Result<Box<Expression>> {
 		let token = self.get_current_token_data()?.token().clone();
 		let precedence = self.current_precedence()?;
@@ -135,10 +154,19 @@ impl Parser {
 					op: token.to_string(),
 					right,
 				};
-
 				infix_expr.into()
 			}
-			Token::OpenParens => todo!("`(` call infix operator"),
+			Token::OpenParens => {
+				self.next_token();
+
+				let args = self.parse_expression_list(&Token::CloseParens)?;
+				let call_expr = CallExpr {
+					token: token.clone(),
+					args,
+					fn_called: left,
+				};
+				call_expr.into()
+			}
 			Token::OpenSquareBraces => {
 				let index = self.parse_expression(Precedence::default())?;
 				let exp = IndexExpr {
@@ -229,32 +257,11 @@ impl Parser {
 		fn_lit.into()
 	}
 
-	fn parse_expression_list(&mut self, closing_token: &Token) -> Result<Vec<Expression>> {
-		let mut exprs: Vec<Expression> = vec![];
-
-		if self.peek_token_is(closing_token) {
-			return Ok(exprs);
-		}
-		self.next_token();
-
-		exprs.push(*self.parse_expression(Precedence::default())?);
-
-		while self.peek_token_is(&Token::Comma) {
-			self.next_token();
-			self.next_token();
-			exprs.push(*self.parse_expression(Precedence::default())?);
-		}
-		self.assert_peek(closing_token)?;
-
-		Ok(exprs)
-	}
 	fn parse_array_literal(&mut self) -> Result<Box<Expression>> {
 		let token = self.get_current_token_data()?.token().clone();
-		let array = ArrayLiteralExpr {
-			token,
-			elements: self.parse_expression_list(&Token::CloseSquareBraces)?,
-		};
+		let elements = self.parse_expression_list(&Token::CloseSquareBraces)?;
 
+		let array = ArrayLiteralExpr { token, elements };
 		array.into()
 	}
 

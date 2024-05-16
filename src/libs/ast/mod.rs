@@ -4,11 +4,6 @@ use anyhow::Result;
 
 use super::token::Token;
 
-#[allow(dead_code)]
-trait Node: fmt::Display {
-	fn token_literal(&self) -> String;
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct IdentifierExpr {
 	/// Token::Identifier
@@ -136,6 +131,18 @@ impl From<IndexExpr> for Result<Box<Expression>> {
 	}
 }
 #[derive(Debug, PartialEq, Eq)]
+pub struct CallExpr {
+	/// `Token::OpenParens`
+	pub token: Token,
+	pub args: Vec<Expression>,
+	pub fn_called: Box<Expression>,
+}
+impl From<CallExpr> for Result<Box<Expression>> {
+	fn from(val: CallExpr) -> Self {
+		Ok(Box::new(Expression::Call(val)))
+	}
+}
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
 	Identifier(IdentifierExpr),
 	Integer(IntegerExpr),
@@ -148,23 +155,7 @@ pub enum Expression {
 	ArrayLiteral(ArrayLiteralExpr),
 	ObjectLiteral(ObjectLiteralExpr),
 	Index(IndexExpr),
-}
-impl Node for Expression {
-	fn token_literal(&self) -> String {
-		match self {
-			Self::Identifier(IdentifierExpr { token, .. }) => token.to_string(),
-			Self::Integer(IntegerExpr { token, .. }) => token.to_string(),
-			Self::String(StringExpr { token, .. }) => token.to_string(),
-			Self::Prefix(PrefixExpr { token, .. }) => token.to_string(),
-			Self::Infix(InfixExpr { token, .. }) => token.to_string(),
-			Self::Boolean(BooleanExpr { token, .. }) => token.to_string(),
-			Self::If(IfExpr { token, .. }) => token.to_string(),
-			Self::FunctionLiteral(FunctionLiteralExpr { token, .. }) => token.to_string(),
-			Self::ArrayLiteral(ArrayLiteralExpr { token, .. }) => token.to_string(),
-			Self::ObjectLiteral(ObjectLiteralExpr { token, .. }) => token.to_string(),
-			Self::Index(IndexExpr { token, .. }) => token.to_string(),
-		}
-	}
+	Call(CallExpr),
 }
 impl fmt::Display for Expression {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -220,9 +211,20 @@ impl fmt::Display for Expression {
 				token: _,
 				value,
 				index,
-			}) => {
-				write!(f, "({}[{}])", value, index)
-			}
+			}) => write!(f, "({}[{}])", value, index),
+			Self::Call(CallExpr {
+				token: _,
+				args,
+				fn_called: fn_body,
+			}) => write!(
+				f,
+				"{}({})",
+				fn_body,
+				args.iter()
+					.map(|arg| arg.to_string())
+					.collect::<Vec<String>>()
+					.join(", "),
+			),
 		}
 	}
 }
@@ -284,16 +286,6 @@ pub enum Statement {
 	Expression(ExpressionStmt),
 	Block(BlockStmt),
 }
-impl Node for Statement {
-	fn token_literal(&self) -> String {
-		match self {
-			Self::Let(LetStmt { token, .. }) => token.to_string(),
-			Self::Return(ReturnStmt { token, .. }) => token.to_string(),
-			Self::Expression(ExpressionStmt { token, .. }) => token.to_string(),
-			Self::Block(BlockStmt { token, .. }) => token.to_string(),
-		}
-	}
-}
 impl fmt::Display for Statement {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
@@ -330,13 +322,6 @@ impl fmt::Display for Statement {
 #[derive(Debug, Default)]
 pub struct Program {
 	pub statements: Vec<Statement>,
-}
-impl Node for Program {
-	fn token_literal(&self) -> String {
-		self.statements
-			.first()
-			.map_or("".into(), |stmt| stmt.to_string())
-	}
 }
 impl fmt::Display for Program {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
