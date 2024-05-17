@@ -4,7 +4,7 @@ use super::{
 };
 
 #[test]
-fn simple_token_read() {
+fn simple_token() {
 	let input = "=+(){},; \t";
 	let lexer = Lexer::new(input);
 	let results: Vec<TokenData> = lexer.collect();
@@ -24,7 +24,7 @@ fn simple_token_read() {
 }
 
 #[test]
-fn let_stmt_token_read() {
+fn let_stmt_token() {
 	let input = "let param = 10;";
 	let lexer = Lexer::new(input);
 	let results: Vec<TokenData> = lexer.collect();
@@ -41,7 +41,7 @@ fn let_stmt_token_read() {
 }
 
 #[test]
-fn bang_sign_token_read() {
+fn bang_sign_token() {
 	let input = r#"!"#;
 	let expected = vec![TokenData::new(Token::Bang, 0, input.as_bytes())];
 
@@ -52,7 +52,7 @@ fn bang_sign_token_read() {
 }
 
 #[test]
-fn math_signs_token_read() {
+fn math_signs_token() {
 	let input = r#"
     !-/*5;
     5 < 10 > 5;
@@ -79,7 +79,7 @@ fn math_signs_token_read() {
 }
 
 #[test]
-fn functional_token_read() {
+fn functional_token() {
 	let input = r#"let five = 5;
     let ten = 10;
 
@@ -136,7 +136,7 @@ fn functional_token_read() {
 }
 
 #[test]
-fn if_else_stmt_token_read() {
+fn if_else_stmt_token() {
 	let input = r#"if (5 < 10) {
         return true;
     } else {
@@ -169,7 +169,7 @@ fn if_else_stmt_token_read() {
 }
 
 #[test]
-fn eq_neq_token_read() {
+fn eq_neq_token() {
 	let input = r#"
     10 == 10;
     10 != 9;

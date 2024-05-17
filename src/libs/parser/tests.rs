@@ -217,7 +217,7 @@ fn return_parsing() -> Result<()> {
 }
 
 #[test]
-fn ident_expr() -> Result<()> {
+fn ident() -> Result<()> {
 	let lexer = Lexer::new("foobar;");
 	let mut parser = Parser::new(Box::new(lexer));
 	let program = parser.parse_program()?;
@@ -243,7 +243,7 @@ fn ident_expr() -> Result<()> {
 }
 
 #[test]
-fn bool_lit_expr() -> Result<()> {
+fn bool_lit() -> Result<()> {
 	let tests = &[
 		("true;", true),
 		("false;", false),
@@ -279,7 +279,7 @@ fn bool_lit_expr() -> Result<()> {
 }
 
 #[test]
-fn int_lit_expr() -> Result<()> {
+fn int_lit() -> Result<()> {
 	let input = "5;";
 
 	let lexer = Lexer::new(input);
@@ -306,7 +306,7 @@ fn int_lit_expr() -> Result<()> {
 }
 
 #[test]
-fn prefix_expr() -> Result<()> {
+fn prefix() -> Result<()> {
 	let tests = &[("!5;", "(!5)"), ("-5;", "(-5)"), ("+5;", "(+5)")];
 
 	for (input, expected) in tests {
@@ -326,7 +326,7 @@ fn prefix_expr() -> Result<()> {
 }
 #[test]
 
-fn prefix_bang_bool_expr() -> Result<()> {
+fn prefix_bang_bool() -> Result<()> {
 	let tests = &[("!true;", true), ("!false;", false)];
 
 	for (input, right) in tests {
@@ -363,7 +363,7 @@ fn prefix_bang_bool_expr() -> Result<()> {
 }
 
 #[test]
-fn infix_numbers_expr() -> Result<()> {
+fn infix_numbers() -> Result<()> {
 	let tests = &[
 		("5 + 5;", 5, "+", 5),
 		("5 - 5;", 5, "-", 5),
@@ -428,7 +428,7 @@ fn infix_numbers_expr() -> Result<()> {
 }
 
 #[test]
-fn infix_bool_expr() -> Result<()> {
+fn infix_bool() -> Result<()> {
 	let tests = &[
 		("true == true;", true, "==", true),
 		("true != false;", true, "!=", false),
@@ -536,7 +536,7 @@ fn operator_precedence_parsing() -> Result<()> {
 }
 
 #[test]
-fn if_without_else_expression_parsing() -> Result<()> {
+fn if_without_else() -> Result<()> {
 	let input = "if (x < y) { x }";
 
 	let lexer = Lexer::new(input);
@@ -599,7 +599,7 @@ fn if_without_else_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn if_else_expression_parsing() -> Result<()> {
+fn if_else() -> Result<()> {
 	let input = "if (x < y) { x; } else { y; }";
 
 	let lexer = Lexer::new(input);
@@ -674,7 +674,7 @@ fn if_else_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn function_literal_expression_parsing() -> Result<()> {
+fn function_literal() -> Result<()> {
 	let input = "function (x, y) { x + y; }";
 
 	let lexer = Lexer::new(input);
@@ -729,7 +729,7 @@ fn function_literal_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn empty_array_literal_expr() -> Result<()> {
+fn empty_array_literal() -> Result<()> {
 	let input = "[];";
 
 	let lexer = Lexer::new(input);
@@ -757,7 +757,7 @@ fn empty_array_literal_expr() -> Result<()> {
 }
 
 #[test]
-fn nested_array_literal_expr() -> Result<()> {
+fn nested_array_literal() -> Result<()> {
 	let input = r#"[[1, 2], [3, 4], [[]]];"#;
 
 	let lexer = Lexer::new(input);
@@ -819,7 +819,7 @@ fn nested_array_literal_expr() -> Result<()> {
 }
 
 #[test]
-fn array_literal_expr() -> Result<()> {
+fn array_literal() -> Result<()> {
 	let input = r#"[1, 2, 3, "some string", true]"#;
 
 	let lexer = Lexer::new(input);
@@ -868,7 +868,7 @@ fn array_literal_expr() -> Result<()> {
 }
 
 #[test]
-fn array_literal_expression_error_parsing() -> Result<()> {
+fn array_literal_error() -> Result<()> {
 	let input = r#"[1, 2, 3,, "some string", true]"#;
 
 	let lexer = Lexer::new(input);
@@ -884,7 +884,7 @@ fn array_literal_expression_error_parsing() -> Result<()> {
 }
 
 #[test]
-fn empty_object_literal_expression_parsing() -> Result<()> {
+fn empty_object_literal() -> Result<()> {
 	let input = "{}";
 
 	let lexer = Lexer::new(input);
@@ -912,7 +912,7 @@ fn empty_object_literal_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn object_literal_expression_parsing() -> Result<()> {
+fn object_literal() -> Result<()> {
 	let input = r#"{ "one": 1, "two": true, "sum": 1 / 2 + 3 }"#;
 
 	let lexer = Lexer::new(input);
@@ -981,7 +981,7 @@ fn object_literal_expression_parsing() -> Result<()> {
 }
 
 #[test]
-fn some_ident_index_expr() -> Result<()> {
+fn some_ident_index() -> Result<()> {
 	let input = r#"myObject["one"]"#;
 
 	let lexer = Lexer::new(input);
@@ -1016,7 +1016,7 @@ fn some_ident_index_expr() -> Result<()> {
 }
 
 #[test]
-fn some_ident_expr_index_expr() -> Result<()> {
+fn some_ident_expr_index() -> Result<()> {
 	let input = r#"myObject["on" + "e"]"#;
 
 	let lexer = Lexer::new(input);
@@ -1059,7 +1059,7 @@ fn some_ident_expr_index_expr() -> Result<()> {
 }
 
 #[test]
-fn object_literal_index_expr() -> Result<()> {
+fn object_literal_index() -> Result<()> {
 	let input = r#"{ "one": 1, "two": true, "sum": 1 / 2 + 3 }["one"]"#;
 
 	let lexer = Lexer::new(input);
@@ -1135,7 +1135,7 @@ fn object_literal_index_expr() -> Result<()> {
 }
 
 #[test]
-fn fn_call_without_params_expr() -> Result<()> {
+fn fn_call_without_params() -> Result<()> {
 	let input = r#"myFunc();"#;
 
 	let lexer = Lexer::new(input);
@@ -1167,7 +1167,7 @@ fn fn_call_without_params_expr() -> Result<()> {
 }
 
 #[test]
-fn fn_call_with_params_expr() -> Result<()> {
+fn fn_call_with_params() -> Result<()> {
 	let input = r#"myFunc(1, 2, "three", true);"#;
 
 	let lexer = Lexer::new(input);
