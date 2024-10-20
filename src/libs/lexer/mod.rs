@@ -1,4 +1,6 @@
-use super::token::{Token, TokenData};
+pub mod token;
+
+use super::lexer::token::{Token, TokenData};
 
 fn is_letter(c: u8) -> bool {
 	c.is_ascii_alphabetic() || c == b'_' || c == b'$'

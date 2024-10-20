@@ -1,5 +1,5 @@
 use super::{
-	super::token::{Token, TokenData},
+	token::{Token, TokenData},
 	Lexer,
 };
 

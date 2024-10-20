@@ -8,8 +8,10 @@ use super::{
 		FunctionLiteralExpr, IdentifierExpr, IfExpr, IndexExpr, InfixExpr, IntegerExpr, LetStmt,
 		ObjectLiteralExpr, PrefixExpr, Program, ReturnStmt, Statement, StringExpr,
 	},
-	lexer::Lexer,
-	token::{Token, TokenData},
+	lexer::{
+		token::{Token, TokenData},
+		Lexer,
+	},
 };
 
 static INFIX_TOKENS: &[Token; 12] = &[

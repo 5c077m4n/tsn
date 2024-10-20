@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt};
 
 use anyhow::Result;
 
-use super::token::Token;
+use super::lexer::token::Token;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct IdentifierExpr {
